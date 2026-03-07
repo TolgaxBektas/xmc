@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>xMasterCenter</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--blue:#2477b7;--blue-light:#eaf3fb;--blue-dark:#1d437e;--red:#dc2626;--red-bg:#FFF2F1;--orange:#E8790C;--orange-bg:#FFF8F0;--green:#16a34a;--green-bg:#F0FDF4;--yellow:#ca8a04;--yellow-bg:#FFFDE8;--gray:#86868B;--gray-light:#F5F5F7;--gray-border:#E8E8ED;--white:#FFFFFF;--shadow:0 1px 2px rgba(0,0,0,.06),0 1px 3px rgba(0,0,0,.08);--accent:#1d437e;--x-color:#1d437e;--x-upper:#E8790C;--x-lower:#00A8A8;--turquoise:#00A8A8}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif;background:#F5F5F7;color:#1D1D1F;display:flex;height:100vh;overflow:hidden;-webkit-font-smoothing:antialiased}
+
+/* === X-BRAND LOGO SYSTEM === */
+.xlogo{display:inline-flex;align-items:baseline;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',sans-serif;line-height:1}
+.xlogo .x{font-weight:900;color:var(--x-color);font-style:italic;margin-right:.25em}
+.xlogo .upper{font-weight:700;color:var(--x-upper);letter-spacing:.3px}
+.xlogo .lower{font-weight:500;color:var(--x-lower);letter-spacing:0}
+.xlogo-lg{font-size:22px}.xlogo-lg .x{font-size:28px}
+.xlogo-md{font-size:14px}.xlogo-md .x{font-size:18px}
+.xlogo-sm{font-size:12px}.xlogo-sm .x{font-size:15px}
+
+.sidebar{width:260px;background:var(--white);border-right:1px solid var(--gray-border);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-logo{height:64px;display:flex;align-items:center;padding:0 20px;border-bottom:1px solid var(--gray-border)}
+.mandant-switcher{padding:12px;border-bottom:1px solid var(--gray-border)}
+.mandant-btn{width:100%;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--blue-light);border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:#1e3a5f}
+.mandant-btn:hover{background:#c8dffc}
+.mandant-dot{width:10px;height:10px;border-radius:50%;margin-right:8px;flex-shrink:0}
+.mandant-dropdown{position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--gray-border);border-radius:8px;box-shadow:var(--shadow);z-index:100;max-height:250px;overflow-y:auto;margin-top:4px}
+.mandant-dropdown button{width:100%;display:flex;align-items:center;padding:8px 12px;border:none;background:none;cursor:pointer;font-size:13px;text-align:left}
+.mandant-dropdown button:hover{background:var(--gray-light)}
+.mandant-dropdown button.active{background:var(--blue-light)}
+.nav-items{flex:1;padding:12px;overflow-y:auto}
+.nav-item{display:flex;align-items:center;padding:10px 12px;border-radius:8px;cursor:pointer;font-size:14px;color:var(--gray);text-decoration:none;margin-bottom:2px;transition:all .15s;gap:10px}
+.nav-item:hover{background:var(--gray-light);color:#111}
+.nav-item.active{background:rgba(29,67,126,.08);color:var(--blue-dark);font-weight:600}
+.nav-item svg{width:20px;height:20px;flex-shrink:0}
+.nav-item .xlogo .x{color:inherit}.nav-item.active .xlogo .x{color:var(--x-color)}
+.nav-item .xlogo .upper{color:inherit}.nav-item.active .xlogo .upper{color:var(--x-upper)}
+.nav-item .xlogo .lower{color:inherit}.nav-item.active .xlogo .lower{color:var(--x-lower)}
+
+/* Sub-menu */
+.nav-parent{position:relative}
+.nav-parent .sub-arrow{margin-left:auto;transition:transform .2s;width:16px;height:16px;flex-shrink:0}
+.nav-parent.open .sub-arrow{transform:rotate(180deg)}
+.nav-sub{max-height:0;overflow:hidden;transition:max-height .25s ease;padding-left:16px}
+.nav-parent.open .nav-sub{max-height:200px}
+.nav-sub .nav-item{font-size:13px;padding:8px 12px;margin-bottom:1px}
+.nav-sub .nav-item svg{width:16px;height:16px}
+
+.user-panel{padding:12px;border-top:1px solid var(--gray-border)}
+.user-info{display:flex;align-items:center;padding:8px 12px}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:var(--blue-dark);color:var(--white);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;margin-right:10px}
+.user-name{font-size:13px;font-weight:600;color:#111}
+.user-email{font-size:11px;color:var(--gray)}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.page-header{padding:20px 28px 0;display:flex;align-items:center;justify-content:space-between}
+.page-title{font-size:22px;font-weight:700;color:#111;display:flex;align-items:center;gap:10px}
+.kpi-strip{display:flex;gap:12px;padding:16px 28px;overflow-x:auto}
+.kpi-card{background:var(--white);border:1px solid var(--gray-border);border-radius:14px;padding:16px 20px;min-width:130px;flex:1;transition:box-shadow .2s}.kpi-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.kpi-label{font-size:11px;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.kpi-value{font-size:22px;font-weight:700}
+.kpi-value.red{color:var(--red)}.kpi-value.orange{color:var(--orange)}.kpi-value.blue{color:var(--blue)}.kpi-value.green{color:var(--green)}
+.toolbar{display:flex;align-items:center;gap:10px;padding:12px 28px;flex-wrap:wrap}
+.view-switcher{display:flex;background:var(--gray-light);border-radius:8px;overflow:hidden}
+.view-btn{padding:8px 14px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:500;color:var(--gray);display:flex;align-items:center;gap:6px;transition:all .15s}
+.view-btn.active{background:var(--white);color:var(--blue-dark);box-shadow:var(--shadow)}
+.view-btn:hover:not(.active){background:#e8e8e8}
+.search-box{flex:1;min-width:180px;position:relative}
+.search-box input{width:100%;padding:8px 12px 8px 34px;border:1px solid var(--gray-border);border-radius:8px;font-size:13px;outline:none}
+.search-box input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(29,67,126,.15)}
+.search-box svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--gray);width:16px;height:16px}
+select.filter-select{padding:8px 12px;border:1px solid var(--gray-border);border-radius:8px;font-size:13px;background:var(--white);cursor:pointer}
+.btn{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;display:flex;align-items:center;gap:6px;transition:all .15s}
+.btn-primary{background:var(--blue-dark);color:var(--white);border-radius:10px}.btn-primary:hover{background:#152f5e}
+.btn-secondary{background:var(--gray-light);color:#374151}.btn-secondary:hover{background:#ddd}
+.btn-danger{background:var(--red);color:var(--white)}.btn-danger:hover{background:#b91c1c}
+.btn-green{background:var(--green);color:var(--white)}.btn-green:hover{background:#15803d}
+.btn-orange{background:var(--orange);color:var(--white)}.btn-orange:hover{background:#c56608}
+.btn-turquoise{background:var(--turquoise);color:var(--white)}.btn-turquoise:hover{background:#008888}
+.btn-sm{padding:5px 10px;font-size:12px}
+.content-area{flex:1;overflow-y:auto;padding:0 28px 28px}
+.status-group{margin-bottom:24px}
+.status-header{display:flex;align-items:center;gap:8px;padding:8px 0;font-size:13px;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--gray-border);margin-bottom:8px}
+.status-dot{width:8px;height:8px;border-radius:50%}
+.status-count{background:var(--gray-light);border-radius:10px;padding:2px 8px;font-size:11px}
+.task-row{display:flex;align-items:center;padding:12px 16px;background:var(--white);border:1px solid var(--gray-border);border-radius:12px;margin-bottom:6px;cursor:pointer;transition:all .2s}
+.task-row:hover{border-color:var(--blue);box-shadow:0 2px 8px rgba(29,67,126,.1)}
+.task-check{width:20px;height:20px;border:2px solid var(--gray-border);border-radius:6px;margin-right:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.task-check:hover{border-color:var(--green);background:var(--green-bg)}
+.task-check.done{background:var(--green);border-color:var(--green)}
+.task-check.done svg{display:block}
+.task-check svg{display:none;width:14px;height:14px;color:var(--white)}
+.priority-bar{width:4px;height:32px;border-radius:2px;margin-right:12px;flex-shrink:0}
+.priority-HIGH{background:var(--red)}.priority-MED{background:var(--orange)}.priority-LOW{background:var(--green)}
+.task-info{flex:1;min-width:0}
+.task-name{font-size:14px;font-weight:600;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.task-desc{font-size:12px;color:var(--gray);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.task-meta{display:flex;align-items:center;gap:10px;flex-shrink:0;margin-left:12px}
+.type-tag{font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;text-transform:uppercase;letter-spacing:.3px}
+.type-MAHNUNG{background:#fef2f2;color:#dc2626}.type-ERINNERUNG{background:#fff7ed;color:#ea580c}
+.type-SAMMELRECHNUNG{background:#eff6ff;color:#2563eb}.type-RECHNUNG{background:#e1effe;color:#1a56db}
+.type-PRUEFUNG{background:#fefce8;color:#ca8a04}.type-ERFASSUNG{background:#f0fdf4;color:#16a34a}
+.type-VERTRAG{background:#faf5ff;color:#7c3aed}.type-BERICHT{background:#f0f9ff;color:#0891b2}
+.task-amount{font-size:13px;font-weight:600;color:#111}
+.task-due{font-size:12px;color:var(--gray)}.task-due.overdue{color:var(--red);font-weight:600}
+.task-actions{display:flex;gap:4px;margin-left:8px}
+.icon-btn{width:30px;height:30px;border:none;background:none;cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--gray);transition:all .15s}
+.icon-btn:hover{background:var(--gray-light);color:#111}
+.kanban-board{display:flex;gap:16px;overflow-x:auto;padding-bottom:20px;min-height:400px}
+.kanban-col{min-width:270px;width:270px;background:var(--gray-light);border-radius:12px;display:flex;flex-direction:column;max-height:calc(100vh - 300px)}
+.kanban-col-header{padding:14px 16px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid}
+.kanban-col-header .cnt{background:rgba(0,0,0,.08);border-radius:10px;padding:2px 8px;font-size:11px}
+.kanban-cards{flex:1;padding:10px;overflow-y:auto;min-height:80px}
+.kanban-card{background:var(--white);border:1px solid var(--gray-border);border-radius:12px;padding:12px;margin-bottom:8px;cursor:pointer;transition:all .2s;position:relative}
+.kanban-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.08);border-color:var(--blue)}
+.kanban-card-pri{position:absolute;top:0;left:0;width:4px;height:100%;border-radius:10px 0 0 10px}
+.kanban-card-name{font-size:13px;font-weight:600;margin-bottom:4px;padding-left:8px}
+.kanban-card-desc{font-size:11px;color:var(--gray);margin-bottom:8px;padding-left:8px;max-height:32px;overflow:hidden}
+.kanban-card-foot{display:flex;align-items:center;justify-content:space-between;padding-left:8px}
+.kanban-card-amt{font-size:12px;font-weight:600}
+.flow-container{position:relative;width:100%;min-height:600px;background:var(--white);border:1px solid var(--gray-border);border-radius:12px;overflow:hidden}
+.flow-canvas{width:100%;height:600px;position:relative}
+.flow-node{position:absolute;padding:12px 18px;border:2px solid;border-radius:10px;cursor:move;user-select:none;min-width:120px;text-align:center;z-index:2;transition:box-shadow .15s}
+.flow-node:hover{box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.flow-node-label{font-size:13px;font-weight:600}
+.flow-node-notes{font-size:10px;color:var(--gray);margin-top:4px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.flow-node-type{font-size:9px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;opacity:.7}
+.flow-node.mandant{background:#eaf3fb;border-color:#1d437e;color:#1d437e}
+.flow-node.kunde{background:#f0fdf4;border-color:#16a34a;color:#166534}
+.flow-node.mahnung{background:#fef2f2;border-color:#dc2626;color:#991b1b}
+.flow-node.erinnerung{background:#fff7ed;border-color:#ea580c;color:#9a3412}
+.flow-node.sammelrechnung{background:#faf5ff;border-color:#7c3aed;color:#5b21b6}
+.flow-node.rechnung{background:#e1effe;border-color:#1a56db;color:#1e429f}
+.flow-node.notiz{background:#fefce8;border-color:#ca8a04;color:#854d0e}
+.flow-toolbar{display:flex;gap:8px;padding:12px;border-bottom:1px solid var(--gray-border);flex-wrap:wrap;align-items:center}
+.flow-toolbar label{font-size:12px;color:var(--gray);font-weight:600}
+.flow-add-btn{padding:5px 10px;font-size:11px;border:1px dashed var(--gray-border);background:var(--white);border-radius:6px;cursor:pointer;font-weight:500}
+.flow-add-btn:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-light)}
+svg.flow-svg{position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;pointer-events:none}
+.flow-line{stroke:#94a3b8;stroke-width:2;fill:none;marker-end:url(#arrow)}
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4);z-index:500;display:flex;align-items:center;justify-content:center}
+.modal{background:var(--white);border-radius:16px;width:640px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.18)}
+.modal-header{padding:20px 24px;border-bottom:1px solid var(--gray-border);display:flex;align-items:center;justify-content:space-between}
+.modal-header h3{font-size:17px;font-weight:700}
+.modal-close{width:32px;height:32px;border:none;background:var(--gray-light);border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--gray)}
+.modal-close:hover{background:#ddd}
+.modal-body{padding:24px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:8px 12px;border:1px solid var(--gray-border);border-radius:8px;font-size:13px;outline:none;font-family:inherit}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(29,67,126,.1)}
+.form-group textarea{min-height:70px;resize:vertical}
+.form-row{display:flex;gap:12px}.form-row .form-group{flex:1}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--gray-border);display:flex;gap:8px;justify-content:flex-end}
+.detail-panel{position:fixed;top:0;right:0;width:440px;height:100vh;background:var(--white);box-shadow:-4px 0 20px rgba(0,0,0,.1);z-index:400;display:flex;flex-direction:column;overflow:hidden}
+.detail-header{padding:20px 24px;border-bottom:1px solid var(--gray-border);display:flex;align-items:center;justify-content:space-between}
+.detail-header h3{font-size:16px;font-weight:700;flex:1;margin-right:12px}
+.detail-body{flex:1;overflow-y:auto;padding:24px}
+.detail-field{margin-bottom:16px}
+.detail-label{font-size:11px;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.detail-value{font-size:14px;color:#111}
+.detail-actions{padding:16px 24px;border-top:1px solid var(--gray-border);display:flex;flex-wrap:wrap;gap:8px}
+.toast-container{position:fixed;top:20px;right:20px;z-index:9999}
+.toast{padding:12px 20px;border-radius:10px;background:#111;color:var(--white);font-size:13px;margin-bottom:8px;animation:slideIn .3s ease;box-shadow:0 4px 12px rgba(0,0,0,.2);max-width:380px}
+.toast.success{background:var(--green)}.toast.error{background:var(--red)}.toast.info{background:var(--blue-dark)}
+@keyframes slideIn{from{transform:translateX(100px);opacity:0}to{transform:translateX(0);opacity:1}}
+.inv-table{width:100%;border-collapse:collapse}
+.inv-table th{text-align:left;padding:10px 14px;font-size:12px;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--gray-border);background:var(--gray-light)}
+.inv-table td{padding:10px 14px;font-size:13px;border-bottom:1px solid var(--gray-border)}
+.inv-table tr:hover{background:var(--blue-light);cursor:pointer}
+.inv-status{padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600}
+.inv-OPEN{background:#fff7ed;color:#ea580c}.inv-PAID{background:#f0fdf4;color:#16a34a}.inv-OVERDUE{background:#fef2f2;color:#dc2626}.inv-DRAFT{background:#f3f4f6;color:#6b7280}
+.inv-link{color:var(--blue-dark);text-decoration:underline;cursor:pointer;font-size:12px}
+.inv-link:hover{color:#152f5e}
+.node-edit-popup{position:absolute;background:var(--white);border:1px solid var(--gray-border);border-radius:10px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:10;width:250px}
+.node-edit-popup label{display:block;font-size:11px;font-weight:600;color:var(--gray);margin-bottom:4px;margin-top:8px}
+.node-edit-popup input,.node-edit-popup select,.node-edit-popup textarea{width:100%;padding:6px 10px;border:1px solid var(--gray-border);border-radius:6px;font-size:12px;outline:none;font-family:inherit}
+.node-edit-popup textarea{min-height:60px;resize:vertical}
+.node-edit-popup .pa{display:flex;gap:6px;margin-top:12px;justify-content:flex-end}
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-bottom:24px}
+.dash-card{background:var(--white);border:1px solid var(--gray-border);border-radius:14px;padding:20px;transition:box-shadow .2s}.dash-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.dash-card h4{font-size:13px;color:var(--gray);margin-bottom:8px}
+.dash-card .big{font-size:28px;font-weight:700}
+.recent-list{background:var(--white);border:1px solid var(--gray-border);border-radius:12px;overflow:hidden}
+.recent-list h3{padding:16px 20px;font-size:15px;font-weight:700;border-bottom:1px solid var(--gray-border)}
+.recent-item{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--gray-border);font-size:13px}
+.recent-item:last-child{border:none}
+.recent-item:hover{background:var(--gray-light);cursor:pointer}
+.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600}
+.tab-bar{display:flex;border-bottom:2px solid var(--gray-border);margin-bottom:20px}
+.tab-btn{padding:10px 20px;border:none;background:none;font-size:13px;font-weight:600;color:var(--gray);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
+.tab-btn.active{color:var(--blue-dark);border-bottom-color:var(--blue-dark)}
+.tab-btn:hover:not(.active){color:#111}
+.settings-section{background:var(--white);border:1px solid var(--gray-border);border-radius:14px;padding:24px;margin-bottom:20px}
+.settings-section h3{font-size:16px;font-weight:700;margin-bottom:16px;color:var(--blue-dark)}
+.service-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.service-row input{flex:1}
+.service-row .amt{width:100px}
+::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#ccc;border-radius:3px}::-webkit-scrollbar-thumb:hover{background:#aaa}
+</style>
+</head>
+<body>
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- PIN LOGIN SCREEN -->
+<div id="pinScreen" style="position:fixed;inset:0;background:linear-gradient(135deg,#1d437e 0%,#00A8A8 100%);display:flex;align-items:center;justify-content:center;z-index:9999">
+  <div style="background:white;border-radius:16px;padding:48px 40px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;max-width:380px;width:90%">
+    <span class="xlogo xlogo-lg" style="margin-bottom:8px;display:inline-flex"><span class="x">x</span><span class="upper">MASTER</span><span class="lower">center</span></span>
+    <p style="color:#86868B;font-size:13px;margin:12px 0 28px">Bitte PIN eingeben</p>
+    <div style="display:flex;gap:10px;justify-content:center;margin-bottom:20px">
+      <input type="password" id="pin1" maxlength="1" style="width:52px;height:60px;text-align:center;font-size:24px;font-weight:700;border:2px solid #E8E8ED;border-radius:12px;outline:none" oninput="pinNext(1)" onkeydown="pinKey(event,1)" autofocus>
+      <input type="password" id="pin2" maxlength="1" style="width:52px;height:60px;text-align:center;font-size:24px;font-weight:700;border:2px solid #E8E8ED;border-radius:12px;outline:none" oninput="pinNext(2)" onkeydown="pinKey(event,2)">
+      <input type="password" id="pin3" maxlength="1" style="width:52px;height:60px;text-align:center;font-size:24px;font-weight:700;border:2px solid #E8E8ED;border-radius:12px;outline:none" oninput="pinNext(3)" onkeydown="pinKey(event,3)">
+      <input type="password" id="pin4" maxlength="1" style="width:52px;height:60px;text-align:center;font-size:24px;font-weight:700;border:2px solid #E8E8ED;border-radius:12px;outline:none" oninput="pinNext(4)" onkeydown="pinKey(event,4)">
+    </div>
+    <div id="pinError" style="color:#dc2626;font-size:13px;min-height:20px;margin-bottom:12px"></div>
+    <button onclick="verifyPin()" style="width:100%;padding:12px;background:#1d437e;color:white;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer">Anmelden</button>
+  </div>
+</div>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <span class="xlogo xlogo-lg"><span class="x">x</span><span class="upper">MASTER</span><span class="lower">center</span></span>
+  </div>
+  <div class="mandant-switcher" style="position:relative">
+    <button class="mandant-btn" onclick="toggleMandantDD()">
+      <span style="display:flex;align-items:center"><span class="mandant-dot" id="mDot"></span><span id="mName"></span></span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6,9 12,15 18,9"/></svg>
+    </button>
+    <div class="mandant-dropdown" id="mDD" style="display:none"></div>
+  </div>
+  <nav class="nav-items" id="navItems"></nav>
+  <div class="user-panel">
+    <div style="text-align:center;padding:4px 12px 8px;font-size:11px" id="syncBadge"><span style="color:#86868B">— Offline —</span></div>
+    <div class="user-info">
+      <div class="user-avatar">TB</div>
+      <div><div class="user-name">Tolga Bektas</div><div class="user-email">tolga.bektas@ilexis.com.tr</div></div>
+    </div>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="page-header"><h1 class="page-title" id="pageTitle"></h1></div>
+  <div id="pageToolbar"></div>
+  <div id="pageKpis"></div>
+  <div class="content-area" id="contentArea"></div>
+</div>
+
+<div class="detail-panel" id="detailPanel" style="display:none"></div>
+<div class="modal-overlay" id="taskModal" style="display:none"></div>
+
+<script>
+// === XLOGO HELPER ===
+function xlogo(name,size){
+  const m=name.match(/^([A-Z][a-z]+)(.+)$/);
+  let upper,lower;
+  if(m&&m[2]){upper=m[1].toUpperCase();lower=m[2].toLowerCase()}
+  else{upper=name.toUpperCase();lower=''}
+  return '<span class="xlogo xlogo-'+size+'"><span class="x">x</span><span class="upper">'+upper+'</span>'+(lower?'<span class="lower">'+lower+'</span>':'')+'</span>';
+}
+
+// === CONFIG ===
+const APP_PIN='1907';
+let syncStatus='local'; // local mode for GitHub Pages
+
+// === STORAGE ===
+const STORE_KEY='xMasterCenter_data';
+function saveData(){
+  const d={tasks,invoices,flowNodes,flowConns,M:M.map(m=>({...m})),C:C.map(c=>({...c})),invNo};
+  try{localStorage.setItem(STORE_KEY,JSON.stringify(d))}catch(e){}
+}
+function loadData(){
+  try{
+    const raw=localStorage.getItem(STORE_KEY);
+    if(!raw)return false;
+    const d=JSON.parse(raw);
+    applyData(d);
+    return true;
+  }catch(e){return false}
+}
+function applyData(d){
+  if(d.tasks)tasks=d.tasks;
+  if(d.invoices)invoices=d.invoices;
+  if(d.flowNodes)flowNodes=d.flowNodes;
+  if(d.flowConns)flowConns=d.flowConns;
+  if(d.invNo)invNo=d.invNo;
+  if(d.M)d.M.forEach(sm=>{const m=M.find(x=>x.id===sm.id);if(m){Object.assign(m,sm)}});
+  if(d.C)d.C.forEach(sc=>{const c=C.find(x=>x.id===sc.id);if(c){Object.assign(c,sc)}else{C.push(sc)}});
+}
+function updateSyncBadge(){
+  const el=document.getElementById('syncBadge');
+  if(!el)return;
+  el.innerHTML='<span style="color:#16a34a">✓ Lokal gespeichert</span>';
+}
+
+// === DATA ===
+const M=[
+  {id:'baleo',name:'Baleo Services',color:'#1a56db',country:'DE',prefix:'BA',
+   briefvorlage:{firma:'Baleo Services GmbH',strasse:'',plz:'',ort:'',land:'Deutschland',tel:'',email:'',web:'',steuernr:'',ustidnr:'',bank:'',iban:'',bic:'',zahlungsziel:14,kopfzeile:'Rechnung',fusszeile:'Vielen Dank für Ihr Vertrauen.'}},
+  {id:'nordlink',name:'Nordlink GmbH',color:'#16a34a',country:'DE',prefix:'NL',
+   briefvorlage:{firma:'Nordlink GmbH',strasse:'',plz:'',ort:'',land:'Deutschland',tel:'',email:'',web:'',steuernr:'',ustidnr:'',bank:'',iban:'',bic:'',zahlungsziel:14,kopfzeile:'Rechnung',fusszeile:'Vielen Dank für Ihr Vertrauen.'}},
+  {id:'conrad',name:'Conrad Media',color:'#ea580c',country:'AT',prefix:'CM',
+   briefvorlage:{firma:'Conrad Media e.U.',strasse:'',plz:'',ort:'',land:'Österreich',tel:'',email:'',web:'',steuernr:'',ustidnr:'',bank:'',iban:'',bic:'',zahlungsziel:14,kopfzeile:'Rechnung',fusszeile:'Vielen Dank für Ihr Vertrauen.'}},
+  {id:'ilexis',name:'Ilexis Medya',color:'#7c3aed',country:'TR',prefix:'IX',
+   briefvorlage:{firma:'Ilexis Medya Ltd. Sti.',strasse:'',plz:'',ort:'Istanbul',land:'Türkei',tel:'',email:'info@ilexis.com.tr',web:'ilexis.com.tr',steuernr:'',ustidnr:'',bank:'',iban:'',bic:'',zahlungsziel:30,kopfzeile:'Fatura',fusszeile:'Güveniniz icin tesekkür ederiz.'}},
+  {id:'maximus',name:'Maximus Medya',color:'#dc2626',country:'TR',prefix:'MX',
+   briefvorlage:{firma:'Maximus Medya Ltd. Sti.',strasse:'',plz:'',ort:'Istanbul',land:'Türkei',tel:'',email:'',web:'',steuernr:'',ustidnr:'',bank:'',iban:'',bic:'',zahlungsziel:30,kopfzeile:'Fatura',fusszeile:'Güveniniz icin tesekkür ederiz.'}},
+  {id:'nilay',name:'Nilay Bektas',color:'#ec4899',country:'TR',prefix:'NB',
+   briefvorlage:{firma:'Nilay Bektas',strasse:'',plz:'',ort:'Istanbul',land:'Türkei',tel:'',email:'',web:'',steuernr:'',ustidnr:'',bank:'',iban:'',bic:'',zahlungsziel:30,kopfzeile:'Fatura',fusszeile:''}},
+  {id:'quantia',name:'Quantia GmbH',color:'#0891b2',country:'DE',prefix:'QA',
+   briefvorlage:{firma:'Quantia GmbH',strasse:'',plz:'',ort:'',land:'Deutschland',tel:'',email:'',web:'',steuernr:'',ustidnr:'',bank:'',iban:'',bic:'',zahlungsziel:14,kopfzeile:'Rechnung',fusszeile:'Vielen Dank für Ihr Vertrauen.'}}
+];
+
+const C=[
+  {id:'pm',name:'PM PROMEDIA LTD',mid:'baleo',email:'',cc:'',
+   services:[{name:'Social Media Betreuung',price:300,unit:'Monat'},{name:'Hosting + Wartung',price:450,unit:'Monat'},{name:'SLA Vertrag',price:5400,unit:'Jahr'}],
+   emailSubject:'Rechnung {nr} — {mandant}',emailBody:'Sehr geehrte Damen und Herren,\n\nanbei erhalten Sie unsere Rechnung Nr. {nr} über {betrag}.\n\nBitte überweisen Sie den Betrag innerhalb von {zahlungsziel} Tagen.\n\nMit freundlichen Grüßen\n{firma}'},
+  {id:'jtg',name:'JTG Werbeverlag GmbH',mid:'baleo',email:'',cc:'',
+   services:[{name:'Sammelrechnung Quartal',price:8500,unit:'Quartal'},{name:'Einzelrechnung',price:3200,unit:'Stück'}],
+   emailSubject:'Rechnung {nr} — {mandant}',emailBody:'Sehr geehrte Damen und Herren,\n\nanbei erhalten Sie unsere Rechnung Nr. {nr} über {betrag}.\n\nBitte überweisen Sie den Betrag innerhalb von {zahlungsziel} Tagen.\n\nMit freundlichen Grüßen\n{firma}'},
+  {id:'abc',name:'ABC Digitalmarketing',mid:'baleo',email:'',cc:'',
+   services:[],
+   emailSubject:'Rechnung {nr} — {mandant}',emailBody:'Sehr geehrte Damen und Herren,\n\nanbei erhalten Sie unsere Rechnung Nr. {nr} über {betrag}.\n\nBitte überweisen Sie den Betrag innerhalb von {zahlungsziel} Tagen.\n\nMit freundlichen Grüßen\n{firma}'},
+  {id:'hans',name:'Hanseatik Verlag',mid:'nordlink',email:'',cc:'',
+   services:[{name:'Medienproduktion',price:4100,unit:'Stück'}],
+   emailSubject:'Rechnung {nr} — {mandant}',emailBody:'Sehr geehrte Damen und Herren,\n\nanbei erhalten Sie unsere Rechnung Nr. {nr} über {betrag}.\n\nBitte überweisen Sie den Betrag innerhalb von {zahlungsziel} Tagen.\n\nMit freundlichen Grüßen\n{firma}'},
+  {id:'baltic',name:'Baltic Print GmbH',mid:'nordlink',email:'',cc:'',
+   services:[{name:'Druckproduktion',price:980,unit:'Stück'}],
+   emailSubject:'Rechnung {nr} — {mandant}',emailBody:'Sehr geehrte Damen und Herren,\n\nanbei erhalten Sie unsere Rechnung Nr. {nr} über {betrag}.\n\nBitte überweisen Sie den Betrag innerhalb von {zahlungsziel} Tagen.\n\nMit freundlichen Grüßen\n{firma}'},
+  {id:'yildiz',name:'Yildiz Ajans',mid:'ilexis',email:'',cc:'',
+   services:[{name:'Kampagnen-Management',price:1800,unit:'Monat'},{name:'Social Media',price:2200,unit:'Monat'}],
+   emailSubject:'Fatura {nr} — {mandant}',emailBody:'Sayın Yetkili,\n\nEkte {nr} numaralı {betrag} tutarındaki faturamızı bulabilirsiniz.\n\nÖdemenin {zahlungsziel} gün içinde yapılmasını rica ederiz.\n\nSaygılarımızla\n{firma}'},
+  {id:'bospho',name:'Bosphorus Media',mid:'ilexis',email:'',cc:'',
+   services:[],
+   emailSubject:'Fatura {nr} — {mandant}',emailBody:'Sayın Yetkili,\n\nEkte {nr} numaralı {betrag} tutarındaki faturamızı bulabilirsiniz.\n\nÖdemenin {zahlungsziel} gün içinde yapılmasını rica ederiz.\n\nSaygılarımızla\n{firma}'}
+];
+
+let uid=200;
+const id=()=>'t'+(uid++);
+
+// Start EMPTY — all demo content cleared
+let tasks=[];
+let invNo=0;
+let invoices=[];
+
+let flowNodes=[];
+let flowConns=[];
+
+let cm=M[0], curPage='dashboard', curView='list', dragN=null, dragOff={x:0,y:0}, connFrom=null, fnId=50;
+let accountsOpen=false;
+
+// Data loading happens in initApp() after PIN verification
+
+// === HELPERS ===
+const $=s=>document.getElementById(s);
+const toast=(m,t='info')=>{const e=document.createElement('div');e.className='toast '+t;e.textContent=m;$('toastContainer').appendChild(e);setTimeout(()=>e.remove(),3000)};
+const fc=n=>n.toLocaleString('de-DE',{style:'currency',currency:'EUR'});
+const fd=d=>d?new Date(d).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
+const dd=d=>Math.ceil((new Date(d)-new Date())/864e5);
+const cn=i=>C.find(c=>c.id===i)?.name||'';
+
+// === NAV DATA ===
+const icons={
+  actioncentral:'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>',
+  workcoord:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>',
+  accounts:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/>',
+  customers:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>',
+  tenants:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/>',
+  correspondence:'<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>',
+  settings:'<circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>'
+};
+
+function svgIcon(key,w){return '<svg width="'+(w||20)+'" height="'+(w||20)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+icons[key]+'</svg>'}
+
+function renderNav(){
+  const isAccSub=(curPage==='invoices'||curPage==='customers'||curPage==='correspondence');
+  const accActive=isAccSub;
+  const accOpen=accountsOpen||isAccSub;
+  let h='';
+  h+='<a class="nav-item '+(curPage==='dashboard'?'active':'')+'" onclick="goPage(\'dashboard\')">'+svgIcon('actioncentral')+xlogo('ActionCentral','md')+'</a>';
+  h+='<a class="nav-item '+(curPage==='leistungsnetz'?'active':'')+'" onclick="goPage(\'leistungsnetz\')">'+svgIcon('workcoord')+xlogo('WorkCoordination','md')+'</a>';
+  h+='<div class="nav-parent '+(accOpen?'open':'')+'" id="navAccounts">';
+  h+='<a class="nav-item '+(accActive?'active':'')+'" onclick="toggleAccounts()">'+svgIcon('accounts')+xlogo('Accounts','md')+'<svg class="sub-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6,9 12,15 18,9"/></svg></a>';
+  h+='<div class="nav-sub">';
+  h+='<a class="nav-item '+(curPage==='invoices'?'active':'')+'" onclick="goPage(\'invoices\')">'+svgIcon('accounts',16)+'Rechnungen</a>';
+  h+='<a class="nav-item '+(curPage==='customers'?'active':'')+'" onclick="goPage(\'customers\')">'+svgIcon('customers',16)+'Kunden</a>';
+  h+='<a class="nav-item '+(curPage==='correspondence'?'active':'')+'" onclick="goPage(\'correspondence\')">'+svgIcon('correspondence',16)+'Schriftverkehr</a>';
+  h+='</div></div>';
+  h+='<a class="nav-item '+(curPage==='settings'?'active':'')+'" onclick="goPage(\'settings\')">'+svgIcon('settings')+'Einstellungen</a>';
+  $('navItems').innerHTML=h;
+}
+
+function toggleAccounts(){accountsOpen=!accountsOpen;const el=document.getElementById('navAccounts');if(el)el.classList.toggle('open',accountsOpen)}
+
+function goPage(p){curPage=p;if(p==='invoices'||p==='customers'||p==='correspondence')accountsOpen=true;closeDetail();renderNav();renderPage()}
+
+// === MANDANT ===
+function renderM(){
+  $('mName').textContent=cm.name;$('mDot').style.backgroundColor=cm.color;
+  $('mDD').innerHTML=M.map(m=>'<button class="'+(m.id===cm.id?'active':'')+'" onclick="switchM(\''+m.id+'\')"><span class="mandant-dot" style="background:'+m.color+'"></span><div><div style="font-weight:600">'+m.name+'</div><div style="font-size:11px;color:#6b7280">'+m.country+'</div></div></button>').join('');
+}
+function toggleMandantDD(){const d=$('mDD');d.style.display=d.style.display==='none'?'block':'none'}
+function switchM(mid){cm=M.find(m=>m.id===mid);$('mDD').style.display='none';renderM();renderPage();toast('Mandant: '+cm.name)}
+
+// === PAGE TITLE WITH XLOGO ===
+function setPageTitle(name,isXBrand){
+  if(isXBrand){$('pageTitle').innerHTML=xlogo(name,'lg')}else{$('pageTitle').textContent=name}
+}
+
+// === PAGE ROUTER ===
+function renderPage(){
+  $('pageToolbar').innerHTML='';$('pageKpis').innerHTML='';
+  if(curPage==='dashboard'){setPageTitle('ActionCentral',true);renderDashboard()}
+  else if(curPage==='leistungsnetz'){setPageTitle('WorkCoordination',true);renderLN()}
+  else if(curPage==='invoices'){setPageTitle('Accounts',true);renderInvoices()}
+  else if(curPage==='customers'){setPageTitle('Accounts',true);renderCustomers()}
+  else if(curPage==='correspondence'){setPageTitle('Accounts',true);renderCorrespondence()}
+  else if(curPage==='settings'){setPageTitle('Einstellungen',false);renderSettings()}
+}
+
+// === DASHBOARD (Cross-Mandant) ===
+function renderDashboard(){
+  const mt=tasks;
+  const mi=invoices;
+  const overdue=mt.filter(t=>t.status==='OVERDUE').length;
+  const open=mt.filter(t=>t.status!=='DONE').length;
+  const openAmt=mt.filter(t=>t.status!=='DONE').reduce((s,t)=>s+(t.amt||0),0);
+  const invOpen=mi.filter(i=>i.status==='OPEN'||i.status==='OVERDUE');
+  const invPaid=mi.filter(i=>i.status==='PAID').reduce((s,i)=>s+i.amt,0);
+  const invTotal=mi.reduce((s,i)=>s+i.amt,0);
+  $('pageKpis').innerHTML='';$('pageToolbar').innerHTML='';
+  // Mandant breakdown
+  let mbHtml='<div class="settings-section" style="margin-top:16px"><h3>Mandanten-Übersicht</h3><table class="inv-table"><thead><tr><th>Mandant</th><th>Aufgaben offen</th><th>Überfällig</th><th>Offener Wert</th><th>Rechnungen</th><th>Bezahlt</th></tr></thead><tbody>';
+  M.forEach(m=>{
+    const mTasks=tasks.filter(t=>t.mid===m.id&&t.status!=='DONE');
+    const mOv=tasks.filter(t=>t.mid===m.id&&t.status==='OVERDUE').length;
+    const mAmt=mTasks.reduce((s,t)=>s+(t.amt||0),0);
+    const mInv=invoices.filter(i=>i.mid===m.id);
+    const mPaid=mInv.filter(i=>i.status==='PAID').reduce((s,i)=>s+i.amt,0);
+    mbHtml+='<tr onclick="switchM(\''+m.id+'\')" style="cursor:pointer"><td style="font-weight:600"><span class="mandant-dot" style="background:'+m.color+';display:inline-block;vertical-align:middle;margin-right:8px"></span>'+m.name+'</td><td>'+mTasks.length+'</td><td style="color:var(--red);font-weight:600">'+(mOv||'—')+'</td><td style="font-weight:600">'+fc(mAmt)+'</td><td>'+mInv.length+'</td><td style="color:var(--green);font-weight:600">'+fc(mPaid)+'</td></tr>';
+  });
+  mbHtml+='</tbody></table></div>';
+  const mName=m=>M.find(x=>x.id===m)?.name||'';
+  const mColor=m=>M.find(x=>x.id===m)?.color||'#888';
+  $('contentArea').innerHTML=
+    '<div class="dash-grid">'+
+      '<div class="dash-card"><h4>Offene Aufgaben (alle)</h4><div class="big" style="color:var(--blue-dark)">'+open+'</div><div style="font-size:12px;color:var(--gray);margin-top:4px">'+overdue+' überfällig</div></div>'+
+      '<div class="dash-card"><h4>Offener Wert (alle)</h4><div class="big">'+fc(openAmt)+'</div></div>'+
+      '<div class="dash-card"><h4>Rechnungen gesamt</h4><div class="big">'+mi.length+'</div><div style="font-size:12px;color:var(--gray);margin-top:4px">'+invOpen.length+' offen</div></div>'+
+      '<div class="dash-card"><h4>Bezahlt</h4><div class="big" style="color:var(--green)">'+fc(invPaid)+'</div><div style="font-size:12px;color:var(--gray);margin-top:4px">von '+fc(invTotal)+' gesamt</div></div>'+
+    '</div>'+
+    mbHtml+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">'+
+      '<div class="recent-list"><h3>Letzte Aufgaben</h3>'+(mt.length?mt.slice(0,7).map(t=>'<div class="recent-item" onclick="goPage(\'leistungsnetz\');setTimeout(()=>openDetail(\''+t.id+'\'),100)"><div><strong>'+t.name+'</strong><div style="font-size:11px;color:var(--gray)"><span class="mandant-dot" style="background:'+mColor(t.mid)+';display:inline-block;vertical-align:middle;margin-right:4px;width:8px;height:8px;border-radius:50%"></span>'+mName(t.mid)+' · '+t.type+' · '+fd(t.due)+'</div></div><span class="type-tag type-'+t.type+'">'+t.status+'</span></div>').join(''):'<div class="recent-item" style="color:var(--gray)">Keine Aufgaben</div>')+'</div>'+
+      '<div class="recent-list"><h3>Letzte Rechnungen</h3>'+(mi.length?mi.slice(0,7).map(i=>'<div class="recent-item" onclick="switchM(\''+i.mid+'\');goPage(\'invoices\')"><div><strong>'+i.num+'</strong><div style="font-size:11px;color:var(--gray)"><span class="mandant-dot" style="background:'+mColor(i.mid)+';display:inline-block;vertical-align:middle;margin-right:4px;width:8px;height:8px;border-radius:50%"></span>'+mName(i.mid)+' · '+cn(i.cid)+' · '+fd(i.date)+'</div></div><div><span class="inv-status inv-'+i.status+'">'+i.status+'</span><span style="margin-left:8px;font-weight:600">'+fc(i.amt)+'</span></div></div>').join(''):'<div class="recent-item" style="color:var(--gray)">Keine Rechnungen</div>')+'</div>'+
+    '</div>';
+}
+
+// === INVOICES ===
+function renderInvoices(){
+  const mi=invoices.filter(i=>i.mid===cm.id);
+  const paid=mi.filter(i=>i.status==='PAID').reduce((s,i)=>s+i.amt,0);
+  const open=mi.filter(i=>i.status==='OPEN').reduce((s,i)=>s+i.amt,0);
+  const overdue=mi.filter(i=>i.status==='OVERDUE').reduce((s,i)=>s+i.amt,0);
+  $('pageKpis').innerHTML='<div class="kpi-strip">'+
+    '<div class="kpi-card"><div class="kpi-label">Rechnungen</div><div class="kpi-value blue">'+mi.length+'</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Bezahlt</div><div class="kpi-value green">'+fc(paid)+'</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Offen</div><div class="kpi-value orange">'+fc(open)+'</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Überfällig</div><div class="kpi-value red">'+fc(overdue)+'</div></div>'+
+  '</div>';
+  $('pageToolbar').innerHTML='<div class="toolbar"><div style="font-size:13px;color:var(--gray);font-weight:600">Rechnungen — '+cm.name+'</div><span style="flex:1"></span><button class="btn btn-primary" onclick="openNewInvoiceForm()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Neue Rechnung</button></div>';
+  let html='<table class="inv-table"><thead><tr><th>Nr.</th><th>Kunde</th><th>Datum</th><th>Betrag</th><th>Status</th><th>Aktionen</th></tr></thead><tbody>';
+  mi.forEach(i=>{
+    html+='<tr>'+
+      '<td style="font-weight:600">'+i.num+'</td>'+
+      '<td>'+cn(i.cid)+'</td>'+
+      '<td>'+fd(i.date)+'</td>'+
+      '<td style="font-weight:600">'+fc(i.amt)+'</td>'+
+      '<td><span class="inv-status inv-'+i.status+'">'+(i.status==='PAID'?'Bezahlt':i.status==='OPEN'?'Offen':i.status==='OVERDUE'?'Überfällig':'Entwurf')+'</span></td>'+
+      '<td style="white-space:nowrap">'+
+        '<button class="btn btn-sm btn-secondary" onclick="generatePDF(\''+i.id+'\')" title="PDF erstellen" style="display:inline-flex">PDF</button> '+
+        '<button class="btn btn-sm btn-turquoise" onclick="openEmailModal(\''+i.id+'\')" title="Per E-Mail senden" style="display:inline-flex">E-Mail</button> '+
+        (i.status!=='PAID'?'<button class="btn btn-sm btn-green" onclick="markPaid(\''+i.id+'\')" style="display:inline-flex">Bezahlt</button> ':'')+
+      '</td>'+
+    '</tr>';
+  });
+  html+='</tbody></table>';
+  if(!mi.length) html='<div style="text-align:center;padding:60px;color:#6b7280">Keine Rechnungen für diesen Mandanten.<br><br><button class="btn btn-primary" onclick="openNewInvoiceForm()">Erste Rechnung erstellen</button></div>';
+  $('contentArea').innerHTML=html;
+}
+
+function markPaid(iid){const i=invoices.find(x=>x.id===iid);if(i){i.status='PAID';saveData();toast('Rechnung als bezahlt markiert','success');renderInvoices()}}
+
+function openNewInvoiceForm(){
+  const custs=C.filter(c=>c.mid===cm.id);
+  $('taskModal').style.display='flex';
+  $('taskModal').innerHTML='<div class="modal">'+
+    '<div class="modal-header"><h3>Neue Rechnung erstellen</h3><button class="modal-close" onclick="closeTF()">&times;</button></div>'+
+    '<div class="modal-body">'+
+      '<div class="form-group"><label>Kunde *</label><select id="invCid">'+custs.map(c=>'<option value="'+c.id+'">'+c.name+'</option>').join('')+'</select></div>'+
+      '<div class="form-row">'+
+        '<div class="form-group"><label>Betrag (EUR) *</label><input type="number" step="0.01" id="invAmt" value=""></div>'+
+        '<div class="form-group"><label>Datum</label><input type="date" id="invDate" value="'+new Date().toISOString().slice(0,10)+'"></div>'+
+      '</div>'+
+      '<div class="form-group"><label>Positionen (optional)</label><textarea id="invPositionen" placeholder="z.B. Social Media Betreuung März 2026"></textarea></div>'+
+    '</div>'+
+    '<div class="modal-footer"><button class="btn btn-secondary" onclick="closeTF()">Abbrechen</button><button class="btn btn-primary" onclick="saveNewInvoice()">Rechnung erstellen</button></div>'+
+  '</div>';
+}
+
+function saveNewInvoice(){
+  const cid=$('invCid').value;
+  const amt=parseFloat($('invAmt').value)||0;
+  if(!cid||!amt){toast('Bitte Kunde und Betrag angeben','error');return}
+  invNo++;
+  const num=cm.prefix+' '+new Date().getFullYear()+'/'+String(invNo).padStart(3,'0');
+  const inv={id:'i'+Date.now(),num,cid,amt,status:'OPEN',date:$('invDate').value||new Date().toISOString().slice(0,10),mid:cm.id,taskId:null,positionen:$('invPositionen').value||''};
+  invoices.push(inv);
+  saveData();
+  closeTF();
+  toast('Rechnung '+num+' erstellt','success');
+  renderInvoices();
+}
+
+// === CUSTOMERS ===
+function renderCustomers(){
+  const mc=C.filter(c=>c.mid===cm.id);
+  $('pageKpis').innerHTML='';
+  $('pageToolbar').innerHTML='<div class="toolbar"><div style="font-size:13px;color:var(--gray);font-weight:600">Kunden — '+cm.name+'</div><span style="flex:1"></span><button class="btn btn-primary" onclick="openCustomerForm()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Neuer Kunde</button></div>';
+  let html='<table class="inv-table"><thead><tr><th>Kunde</th><th>E-Mail</th><th>CC</th><th>Leistungen</th><th>Offene Aufgaben</th><th>Rechnungen</th><th>Aktionen</th></tr></thead><tbody>';
+  mc.forEach(c=>{
+    const ct=tasks.filter(t=>t.cid===c.id&&t.mid===cm.id&&t.status!=='DONE');
+    const ci=invoices.filter(i=>i.cid===c.id&&i.mid===cm.id);
+    html+='<tr>'+
+      '<td style="font-weight:600">'+c.name+'</td>'+
+      '<td style="font-size:12px">'+(c.email||'<span style="color:#ccc">—</span>')+'</td>'+
+      '<td style="font-size:12px">'+(c.cc||'<span style="color:#ccc">—</span>')+'</td>'+
+      '<td style="font-size:12px">'+(c.services&&c.services.length?c.services.map(s=>s.name+' '+fc(s.price)+'/'+s.unit).join(', '):'—')+'</td>'+
+      '<td>'+ct.length+'</td>'+
+      '<td>'+ci.length+'</td>'+
+      '<td><button class="btn btn-sm btn-secondary" onclick="openCustomerForm(\''+c.id+'\')">Bearbeiten</button></td>'+
+    '</tr>';
+  });
+  html+='</tbody></table>';
+  if(!mc.length) html='<div style="text-align:center;padding:60px;color:#6b7280">Keine Kunden für diesen Mandanten</div>';
+  $('contentArea').innerHTML=html;
+}
+
+function openCustomerForm(cid){
+  const c=cid?C.find(x=>x.id===cid):null;
+  const svcs=c&&c.services?c.services:[];
+  $('taskModal').style.display='flex';
+  $('taskModal').innerHTML='<div class="modal">'+
+    '<div class="modal-header"><h3>'+(c?'Kunde bearbeiten':'Neuer Kunde')+'</h3><button class="modal-close" onclick="closeTF()">&times;</button></div>'+
+    '<div class="modal-body">'+
+      '<div class="form-group"><label>Firmenname *</label><input id="cfName" value="'+(c?c.name:'')+'"></div>'+
+      '<div class="form-row">'+
+        '<div class="form-group"><label>E-Mail</label><input id="cfEmail" type="email" value="'+(c?c.email||'':'')+'"></div>'+
+        '<div class="form-group"><label>CC</label><input id="cfCC" value="'+(c?c.cc||'':'')+'"></div>'+
+      '</div>'+
+      '<div class="form-group"><label>E-Mail Betreff-Vorlage</label><input id="cfSubject" value="'+(c?c.emailSubject||'':'Rechnung {nr} — {mandant}')+'"></div>'+
+      '<div class="form-group"><label>E-Mail Text-Vorlage</label><textarea id="cfBody" style="min-height:120px">'+(c?c.emailBody||'':'Sehr geehrte Damen und Herren,\n\nanbei erhalten Sie unsere Rechnung Nr. {nr} über {betrag}.\n\nBitte überweisen Sie den Betrag innerhalb von {zahlungsziel} Tagen.\n\nMit freundlichen Grüßen\n{firma}')+'</textarea></div>'+
+      '<h4 style="margin:16px 0 8px;font-size:14px;font-weight:700">Leistungsbeschreibungen</h4>'+
+      '<div id="svcList">'+svcs.map((s,i)=>'<div class="service-row"><input placeholder="Leistung" value="'+s.name+'" class="svc-name"><input class="amt svc-price" type="number" step="0.01" value="'+s.price+'" placeholder="Preis"><select class="svc-unit"><option '+(s.unit==='Monat'?'selected':'')+'>Monat</option><option '+(s.unit==='Quartal'?'selected':'')+'>Quartal</option><option '+(s.unit==='Jahr'?'selected':'')+'>Jahr</option><option '+(s.unit==='Stück'?'selected':'')+'>Stück</option><option '+(s.unit==='Stunde'?'selected':'')+'>Stunde</option></select><button class="icon-btn" onclick="this.parentElement.remove()" title="Entfernen" style="color:var(--red)">&times;</button></div>').join('')+'</div>'+
+      '<button class="btn btn-sm btn-secondary" onclick="addSvcRow()" style="margin-top:8px">+ Leistung</button>'+
+    '</div>'+
+    '<div class="modal-footer"><button class="btn btn-secondary" onclick="closeTF()">Abbrechen</button><button class="btn btn-primary" onclick="saveCustomer('+(c?"'"+c.id+"'":"null")+')">Speichern</button></div>'+
+  '</div>';
+}
+
+function addSvcRow(){
+  const d=document.createElement('div');d.className='service-row';
+  d.innerHTML='<input placeholder="Leistung" class="svc-name"><input class="amt svc-price" type="number" step="0.01" placeholder="Preis"><select class="svc-unit"><option>Monat</option><option>Quartal</option><option>Jahr</option><option>Stück</option><option>Stunde</option></select><button class="icon-btn" onclick="this.parentElement.remove()" style="color:var(--red)">&times;</button>';
+  $('svcList').appendChild(d);
+}
+
+function saveCustomer(cid){
+  const name=$('cfName').value.trim();
+  if(!name){toast('Bitte Name eingeben','error');return}
+  const svcs=[];
+  document.querySelectorAll('#svcList .service-row').forEach(r=>{
+    const n=r.querySelector('.svc-name').value.trim();
+    const p=parseFloat(r.querySelector('.svc-price').value)||0;
+    const u=r.querySelector('.svc-unit').value;
+    if(n)svcs.push({name:n,price:p,unit:u});
+  });
+  if(cid){
+    const c=C.find(x=>x.id===cid);
+    if(c){c.name=name;c.email=$('cfEmail').value;c.cc=$('cfCC').value;c.emailSubject=$('cfSubject').value;c.emailBody=$('cfBody').value;c.services=svcs}
+  }else{
+    C.push({id:'c'+Date.now(),name,mid:cm.id,email:$('cfEmail').value,cc:$('cfCC').value,services:svcs,emailSubject:$('cfSubject').value,emailBody:$('cfBody').value});
+  }
+  saveData();closeTF();toast('Kunde gespeichert','success');renderCustomers();
+}
+
+// === CORRESPONDENCE (Schriftverkehr) — mandant-specific ===
+function renderCorrespondence(){
+  $('pageKpis').innerHTML='';
+  $('pageToolbar').innerHTML='<div class="toolbar"><div style="font-size:13px;color:var(--gray);font-weight:600">Schriftverkehr — '+cm.name+'</div></div>';
+  $('contentArea').innerHTML='<div style="text-align:center;padding:80px">'+
+    '<div style="margin-bottom:16px">'+svgIcon('correspondence',48)+'</div>'+
+    '<h3 style="font-size:18px;font-weight:700;margin-bottom:8px;color:#374151">Schriftverkehr</h3>'+
+    '<p style="color:var(--gray);font-size:14px;max-width:440px;margin:0 auto">Hier werden zukünftig Briefe, Anschreiben und sonstiger Schriftverkehr für <strong>'+cm.name+'</strong> verwaltet.</p>'+
+    '<p style="color:var(--gray);font-size:12px;margin-top:12px">Dieses Modul befindet sich im Aufbau.</p>'+
+  '</div>';
+}
+
+// === TENANTS (used inside Settings) ===
+function renderTenantsContent(){
+  let html='<div class="settings-section"><h3>Mandanten verwalten</h3>';
+  html+='<table class="inv-table"><thead><tr><th>Mandant</th><th>Land</th><th>Prefix</th><th>Aufgaben</th><th>Rechnungen</th><th>Offener Wert</th></tr></thead><tbody>';
+  M.forEach(m=>{
+    const mt=tasks.filter(t=>t.mid===m.id&&t.status!=='DONE');
+    const mi=invoices.filter(i=>i.mid===m.id);
+    const oAmt=mt.reduce((s,t)=>s+(t.amt||0),0);
+    html+='<tr onclick="switchM(\''+m.id+'\')" style="cursor:pointer">'+
+      '<td style="font-weight:600"><span class="mandant-dot" style="background:'+m.color+';display:inline-block;vertical-align:middle;margin-right:8px"></span>'+m.name+'</td>'+
+      '<td>'+m.country+'</td>'+
+      '<td><code>'+m.prefix+'</code></td>'+
+      '<td>'+mt.length+'</td>'+
+      '<td>'+mi.length+'</td>'+
+      '<td style="font-weight:600">'+fc(oAmt)+'</td>'+
+    '</tr>';
+  });
+  html+='</tbody></table></div>';
+  return html;
+}
+
+// === SETTINGS ===
+let settingsTab='briefvorlage';
+function renderSettings(){
+  $('pageToolbar').innerHTML='';$('pageKpis').innerHTML='';
+  let h='<div class="tab-bar">'+
+    '<button class="tab-btn '+(settingsTab==='briefvorlage'?'active':'')+'" onclick="settingsTab=\'briefvorlage\';renderSettings()">Briefvorlage</button>'+
+    '<button class="tab-btn '+(settingsTab==='mandanten'?'active':'')+'" onclick="settingsTab=\'mandanten\';renderSettings()">Mandanten</button>'+
+    '<button class="tab-btn '+(settingsTab==='import'?'active':'')+'" onclick="settingsTab=\'import\';renderSettings()">Import / Export</button>'+
+    '<button class="tab-btn '+(settingsTab==='remote'?'active':'')+'" onclick="settingsTab=\'remote\';renderSettings()">Remote-Steuerung</button>'+
+  '</div>';
+  if(settingsTab==='briefvorlage') h+=renderBriefvorlage();
+  else if(settingsTab==='mandanten') h+=renderTenantsContent();
+  else if(settingsTab==='import') h+=renderImportExport();
+  else h+=renderRemote();
+  $('contentArea').innerHTML=h;
+}
+
+function renderBriefvorlage(){
+  const bv=cm.briefvorlage||{};
+  const fields=[
+    {k:'firma',l:'Firma / Name',w:'full'},
+    {k:'strasse',l:'Straße + Nr.',w:'full'},
+    {k:'plz',l:'PLZ',w:'half'},{k:'ort',l:'Ort',w:'half'},
+    {k:'land',l:'Land',w:'half'},{k:'tel',l:'Telefon',w:'half'},
+    {k:'email',l:'E-Mail',w:'half'},{k:'web',l:'Webseite',w:'half'},
+    {k:'steuernr',l:'Steuernummer',w:'half'},{k:'ustidnr',l:'USt-IdNr.',w:'half'},
+    {k:'bank',l:'Bank',w:'full'},
+    {k:'iban',l:'IBAN',w:'half'},{k:'bic',l:'BIC',w:'half'},
+    {k:'zahlungsziel',l:'Zahlungsziel (Tage)',w:'half',type:'number'},
+    {k:'kopfzeile',l:'Kopfzeile (Dokumenttitel)',w:'half'},
+    {k:'fusszeile',l:'Fußzeile',w:'full',type:'textarea'}
+  ];
+  let h='<div class="settings-section"><h3>Briefvorlage — '+cm.name+'</h3>';
+  let inRow=false;
+  fields.forEach(f=>{
+    if(f.w==='full'){
+      if(inRow){h+='</div>';inRow=false}
+      if(f.type==='textarea') h+='<div class="form-group"><label>'+f.l+'</label><textarea id="bv_'+f.k+'">'+(bv[f.k]||'')+'</textarea></div>';
+      else h+='<div class="form-group"><label>'+f.l+'</label><input id="bv_'+f.k+'" value="'+(bv[f.k]||'')+'" '+(f.type==='number'?'type="number"':'')+'></div>';
+    }else{
+      if(!inRow){h+='<div class="form-row">';inRow=true}
+      h+='<div class="form-group"><label>'+f.l+'</label><input id="bv_'+f.k+'" value="'+(bv[f.k]||'')+'" '+(f.type==='number'?'type="number"':'')+'></div>';
+      if(inRow&&h.split('<div class="form-row">').pop().split('form-group').length>2){h+='</div>';inRow=false}
+    }
+  });
+  if(inRow)h+='</div>';
+  h+='<div style="margin-top:16px;display:flex;gap:8px"><button class="btn btn-primary" onclick="saveBriefvorlage()">Briefvorlage speichern</button></div></div>';
+  return h;
+}
+
+function saveBriefvorlage(){
+  const bv=cm.briefvorlage||{};
+  ['firma','strasse','plz','ort','land','tel','email','web','steuernr','ustidnr','bank','iban','bic','zahlungsziel','kopfzeile','fusszeile'].forEach(k=>{
+    const el=$('bv_'+k);if(el)bv[k]=k==='zahlungsziel'?parseInt(el.value)||14:el.value;
+  });
+  cm.briefvorlage=bv;
+  saveData();toast('Briefvorlage gespeichert','success');
+}
+
+function renderImportExport(){
+  let h='<div class="settings-section"><h3>Briefvorlage — JSON Import / Export</h3>';
+  h+='<p style="margin-bottom:12px;color:var(--gray);font-size:13px">Exportieren Sie die Briefvorlage des aktuellen Mandanten als JSON oder importieren Sie eine zuvor gespeicherte.</p>';
+  h+='<div style="display:flex;gap:8px;margin-bottom:16px"><button class="btn btn-primary" onclick="exportBV()">JSON exportieren</button><button class="btn btn-secondary" onclick="importBV()">JSON importieren</button></div>';
+  h+='<textarea id="bvJson" style="width:100%;min-height:200px;font-family:monospace;font-size:12px;border:1px solid var(--gray-border);border-radius:8px;padding:12px" placeholder="JSON hier einfügen zum Importieren...">'+JSON.stringify(cm.briefvorlage||{},null,2)+'</textarea>';
+  h+='</div>';
+  h+='<div class="settings-section"><h3>Gesamtdaten — Export / Import</h3>';
+  h+='<p style="margin-bottom:12px;color:var(--gray);font-size:13px">Exportieren oder importieren Sie alle Daten (Mandanten, Kunden, Aufgaben, Rechnungen, Briefvorlagen).</p>';
+  h+='<div style="display:flex;gap:8px;margin-bottom:16px"><button class="btn btn-primary" onclick="exportAll()">Alles exportieren</button><button class="btn btn-orange" onclick="importAll()">Alles importieren</button></div>';
+  h+='<textarea id="allJson" style="width:100%;min-height:200px;font-family:monospace;font-size:12px;border:1px solid var(--gray-border);border-radius:8px;padding:12px" placeholder="Gesamtdaten JSON hier einfügen..."></textarea>';
+  h+='</div>';
+  return h;
+}
+
+function exportBV(){$('bvJson').value=JSON.stringify(cm.briefvorlage||{},null,2);toast('Briefvorlage exportiert','success')}
+function importBV(){
+  try{const d=JSON.parse($('bvJson').value);cm.briefvorlage=d;saveData();toast('Briefvorlage importiert','success');renderSettings()}
+  catch(e){toast('Ungültiges JSON: '+e.message,'error')}
+}
+function exportAll(){
+  const d={mandanten:M.map(m=>({...m})),kunden:C.map(c=>({...c})),aufgaben:tasks,rechnungen:invoices,rechnungsNr:invNo};
+  $('allJson').value=JSON.stringify(d,null,2);toast('Alle Daten exportiert','success');
+}
+function importAll(){
+  try{
+    const d=JSON.parse($('allJson').value);
+    if(d.mandanten)d.mandanten.forEach(sm=>{const m=M.find(x=>x.id===sm.id);if(m)Object.assign(m,sm)});
+    if(d.kunden){d.kunden.forEach(sc=>{const c=C.find(x=>x.id===sc.id);if(c)Object.assign(c,sc);else C.push(sc)})}
+    if(d.aufgaben)tasks=d.aufgaben;
+    if(d.rechnungen)invoices=d.rechnungen;
+    if(d.rechnungsNr)invNo=d.rechnungsNr;
+    saveData();toast('Alle Daten importiert','success');renderPage();
+  }catch(e){toast('Ungültiges JSON: '+e.message,'error')}
+}
+
+function renderRemote(){
+  let h='<div class="settings-section"><h3>Remote-Steuerung via Claude</h3>';
+  h+='<div style="color:#374151;font-size:14px;line-height:1.7">';
+  h+='<div style="padding:16px;background:var(--orange-bg);border-radius:10px;border-left:4px solid var(--orange);margin-bottom:16px">';
+  h+='<strong style="color:var(--orange)">⏳ Zwischenlösung — GitHub Pages</strong>';
+  h+='<p style="margin-top:8px;font-size:13px">Diese Version läuft auf GitHub Pages. Daten werden lokal im Browser gespeichert. Für die volle Server-Synchronisation wird die alexis.tr-Version benötigt.</p>';
+  h+='</div>';
+  h+='<p style="margin-bottom:12px"><strong>Datenaustausch mit Claude:</strong></p>';
+  h+='<p style="margin-bottom:12px;font-size:13px">Nutze den <strong>Import/Export</strong>-Tab um Daten mit Claude auszutauschen. Claude kann die App im Browser öffnen und die Oberfläche sehen.</p>';
+  h+='</div></div>';
+  return h;
+}
+// GitHub Pages Version — kein Server-Sync, Daten nur in localStorage
+
+// === xWorkCoordination (Leistungsnetz) — mandant-INDEPENDENT Mission Board ===
+function renderLN(){
+  const mt=tasks;
+  const overdue=mt.filter(t=>t.status==='OVERDUE').length;
+  const soon=mt.filter(t=>t.status!=='DONE'&&t.due&&dd(t.due)<=7&&dd(t.due)>0).length;
+  const open=mt.filter(t=>t.status!=='DONE').length;
+  const ready=mt.filter(t=>t.status==='READY').length;
+  const totalOpen=mt.filter(t=>t.status!=='DONE').reduce((s,t)=>s+(t.amt||0),0);
+  $('pageKpis').innerHTML='<div class="kpi-strip">'+
+    '<div class="kpi-card"><div class="kpi-label">Überfällig</div><div class="kpi-value red">'+overdue+'</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Bald fällig</div><div class="kpi-value orange">'+soon+'</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Offen</div><div class="kpi-value blue">'+open+'</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Bereit</div><div class="kpi-value green">'+ready+'</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Offener Wert</div><div class="kpi-value">'+fc(totalOpen)+'</div></div>'+
+  '</div>';
+  $('pageToolbar').innerHTML='<div class="toolbar">'+
+    '<div class="view-switcher">'+
+      '<button class="view-btn '+(curView==='list'?'active':'')+'" onclick="curView=\'list\';renderLN()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Liste</button>'+
+      '<button class="view-btn '+(curView==='kanban'?'active':'')+'" onclick="curView=\'kanban\';renderLN()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="4" height="18" rx="1"/><rect x="10" y="3" width="4" height="12" rx="1"/><rect x="16" y="3" width="4" height="15" rx="1"/></svg>Kanban</button>'+
+      '<button class="view-btn '+(curView==='flow'?'active':'')+'" onclick="curView=\'flow\';renderLN()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/></svg>Ablaufdiagramm</button>'+
+    '</div>'+
+    '<div class="search-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" placeholder="Suchen..." id="sInput" oninput="renderLNContent()"></div>'+
+    '<select class="filter-select" id="fMandant" onchange="renderLNContent()"><option value="">Alle Mandanten</option>'+M.map(m=>'<option value="'+m.id+'">'+m.name+'</option>').join('')+'</select>'+
+    '<select class="filter-select" id="fType" onchange="renderLNContent()"><option value="">Alle Typen</option><option value="MAHNUNG">Mahnung</option><option value="ERINNERUNG">Erinnerung</option><option value="SAMMELRECHNUNG">Sammelrechnung</option><option value="RECHNUNG">Rechnung</option><option value="PRUEFUNG">Prüfung</option><option value="ERFASSUNG">Erfassung</option><option value="VERTRAG">Vertrag</option><option value="BERICHT">Bericht</option></select>'+
+    '<select class="filter-select" id="fStatus" onchange="renderLNContent()"><option value="">Alle Status</option><option value="OVERDUE">Überfällig</option><option value="READY">Bereit</option><option value="OPEN">Offen</option><option value="PENDING">Wartend</option><option value="DONE">Erledigt</option></select>'+
+    '<button class="btn btn-primary" onclick="openTaskForm()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Aufgabe</button>'+
+  '</div>';
+  renderLNContent();
+}
+
+function getFilt(){
+  const s=($('sInput')?.value||'').toLowerCase();
+  const fm=$('fMandant')?.value||'';
+  const ft=$('fType')?.value||'';
+  const fs=$('fStatus')?.value||'';
+  return tasks.filter(t=>{
+    if(fm&&t.mid!==fm)return false;
+    if(s&&!t.name.toLowerCase().includes(s)&&!(t.desc||'').toLowerCase().includes(s))return false;
+    if(ft&&t.type!==ft)return false;
+    if(fs&&t.status!==fs)return false;
+    return true;
+  });
+}
+
+function renderLNContent(){
+  closeDetail();
+  if(curView==='list') renderList();
+  else if(curView==='kanban') renderKanban();
+  else renderFlow();
+}
+
+function renderList(){
+  const f=getFilt();
+  const grp={OVERDUE:[],READY:[],OPEN:[],PENDING:[],DONE:[]};
+  const gl={OVERDUE:'Überfällig',READY:'Bereit',OPEN:'Offen',PENDING:'Wartend',DONE:'Erledigt'};
+  const gc={OVERDUE:'#dc2626',READY:'#16a34a',OPEN:'#2563eb',PENDING:'#ca8a04',DONE:'#6b7280'};
+  const mColor=mid=>M.find(x=>x.id===mid)?.color||'#888';
+  const mName=mid=>M.find(x=>x.id===mid)?.name||'';
+  f.forEach(t=>{if(grp[t.status])grp[t.status].push(t)});
+  let h='';
+  for(const[s,items]of Object.entries(grp)){
+    if(!items.length)continue;
+    h+='<div class="status-group"><div class="status-header"><span class="status-dot" style="background:'+gc[s]+'"></span>'+gl[s]+'<span class="status-count">'+items.length+'</span></div>';
+    items.forEach(t=>{
+      const ov=t.due&&new Date(t.due)<new Date()&&t.status!=='DONE';
+      const inv=invoices.find(i=>i.id===t.invoiceId);
+      h+='<div class="task-row" onclick="openDetail(\''+t.id+'\')">'+
+        '<div class="task-check '+(t.status==='DONE'?'done':'')+'" onclick="event.stopPropagation();togDone(\''+t.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20,6 9,17 4,12"/></svg></div>'+
+        '<span class="mandant-dot" style="background:'+mColor(t.mid)+';display:inline-block;flex-shrink:0;margin-right:8px" title="'+mName(t.mid)+'"></span>'+
+        '<div class="priority-bar priority-'+t.pri+'"></div>'+
+        '<div class="task-info">'+
+          '<div class="task-name" style="'+(t.status==='DONE'?'text-decoration:line-through;opacity:.5':'')+'">'+t.name+'</div>'+
+          '<div class="task-desc"><span style="color:'+mColor(t.mid)+';font-weight:600;font-size:11px">'+mName(t.mid)+'</span>'+(cn(t.cid)?' · '+cn(t.cid):'')+(t.desc?' · '+t.desc:'')+(inv?' · <span class="inv-link" onclick="event.stopPropagation();switchM(\''+t.mid+'\');goPage(\'invoices\')">RE '+inv.num+'</span>':'')+'</div>'+
+        '</div>'+
+        '<div class="task-meta">'+
+          '<span class="type-tag type-'+t.type+'">'+t.type+'</span>'+
+          (t.amt?'<span class="task-amount">'+fc(t.amt)+'</span>':'')+
+          '<span class="task-due '+(ov?'overdue':'')+'">'+fd(t.due)+'</span>'+
+          '<button class="icon-btn" onclick="event.stopPropagation();openTaskForm(\''+t.id+'\')" title="Bearbeiten"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>'+
+          '<button class="icon-btn" onclick="event.stopPropagation();delTask(\''+t.id+'\')" title="Löschen"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
+        '</div></div>';
+    });
+    h+='</div>';
+  }
+  if(!h) h='<div style="text-align:center;padding:60px;color:#6b7280">Keine Aufgaben gefunden.<br><br><button class="btn btn-primary" onclick="openTaskForm()">Erste Aufgabe erstellen</button></div>';
+  $('contentArea').innerHTML=h;
+}
+
+function renderKanban(){
+  const f=getFilt();
+  const cols=[{s:'OVERDUE',l:'Überfällig',c:'#dc2626'},{s:'READY',l:'Bereit',c:'#16a34a'},{s:'OPEN',l:'Offen',c:'#2563eb'},{s:'PENDING',l:'Wartend',c:'#ca8a04'},{s:'DONE',l:'Erledigt',c:'#6b7280'}];
+  const mColor=mid=>M.find(x=>x.id===mid)?.color||'#888';
+  const mName=mid=>M.find(x=>x.id===mid)?.name||'';
+  let h='<div class="kanban-board">';
+  cols.forEach(col=>{
+    const items=f.filter(t=>t.status===col.s);
+    h+='<div class="kanban-col"><div class="kanban-col-header" style="border-color:'+col.c+';color:'+col.c+'">'+col.l+'<span class="cnt">'+items.length+'</span></div><div class="kanban-cards" data-status="'+col.s+'">';
+    items.forEach(t=>{
+      h+='<div class="kanban-card" draggable="true" data-id="'+t.id+'" onclick="openDetail(\''+t.id+'\')" ondragstart="onDS(event,\''+t.id+'\')" ondragend="onDE(event)">'+
+        '<div class="kanban-card-pri priority-'+t.pri+'"></div>'+
+        '<div style="display:flex;align-items:center;gap:6px;padding-left:8px;margin-bottom:4px"><span class="mandant-dot" style="background:'+mColor(t.mid)+';width:8px;height:8px;display:inline-block;border-radius:50%;flex-shrink:0" title="'+mName(t.mid)+'"></span><span style="font-size:10px;color:'+mColor(t.mid)+';font-weight:600">'+mName(t.mid)+'</span></div>'+
+        '<div class="kanban-card-name">'+t.name+'</div>'+
+        '<div class="kanban-card-desc">'+(t.desc||'').substring(0,55)+((t.desc||'').length>55?'...':'')+'</div>'+
+        '<div class="kanban-card-foot"><span class="type-tag type-'+t.type+'" style="font-size:10px">'+t.type+'</span>'+(t.amt?'<span class="kanban-card-amt">'+fc(t.amt)+'</span>':'')+'</div>'+
+      '</div>';
+    });
+    h+='</div></div>';
+  });
+  h+='</div>';
+  $('contentArea').innerHTML=h;
+  document.querySelectorAll('.kanban-cards').forEach(z=>{
+    z.addEventListener('dragover',e=>{e.preventDefault();z.style.background='#e0e7ff'});
+    z.addEventListener('dragleave',()=>{z.style.background=''});
+    z.addEventListener('drop',e=>{e.preventDefault();z.style.background='';const tid=e.dataTransfer.getData('text/plain');const ns=z.dataset.status;const t=tasks.find(x=>x.id===tid);if(t&&t.status!==ns){t.status=ns;if(ns==='DONE')t.completedAt=new Date().toISOString();saveData();toast('"'+t.name+'" → '+ns,'success');renderLN()}});
+  });
+}
+function onDS(e,id){e.dataTransfer.setData('text/plain',id);e.target.style.opacity='.4'}
+function onDE(e){e.target.style.opacity='1'}
+
+function renderFlow(){
+  $('contentArea').innerHTML='<div class="flow-container">'+
+    '<div class="flow-toolbar">'+
+      '<label>Knoten:</label>'+
+      ['mandant','kunde','mahnung','erinnerung','sammelrechnung','rechnung','notiz'].map(t=>'<button class="flow-add-btn" onclick="addFN(\''+t+'\')">+ '+t[0].toUpperCase()+t.slice(1)+'</button>').join('')+
+      '<span style="flex:1"></span>'+
+      '<button class="btn btn-sm btn-secondary" id="connBtn" onclick="toggleConn()">Verbinden</button>'+
+    '</div>'+
+    '<div class="flow-canvas" id="fCanvas"><svg class="flow-svg" id="fSvg"><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/></marker></defs></svg></div>'+
+  '</div>';
+  renderFN();renderFC();
+}
+
+function renderFN(){
+  const cv=$('fCanvas');if(!cv)return;
+  cv.querySelectorAll('.flow-node,.node-edit-popup').forEach(n=>n.remove());
+  flowNodes.forEach(n=>{
+    const el=document.createElement('div');
+    el.className='flow-node '+n.type;el.id='nd-'+n.id;
+    el.style.left=n.x+'px';el.style.top=n.y+'px';
+    el.innerHTML='<div class="flow-node-type">'+n.type+'</div><div class="flow-node-label">'+n.label+'</div>'+(n.notes?'<div class="flow-node-notes">'+n.notes+'</div>':'');
+    el.addEventListener('mousedown',e=>{
+      if(connFrom){if(connFrom!==n.id){flowConns.push({f:connFrom,t:n.id});saveData();toast('Verbindung erstellt','success');renderFC()}connFrom=null;$('connBtn').textContent='Verbinden';$('connBtn').className='btn btn-sm btn-secondary';return}
+      if(e.target.closest('.node-edit-popup'))return;
+      dragN=n;const r=el.getBoundingClientRect();const cr=cv.getBoundingClientRect();dragOff.x=e.clientX-r.left;dragOff.y=e.clientY-r.top;e.preventDefault();
+    });
+    el.addEventListener('dblclick',e=>{e.stopPropagation();showNE(n)});
+    el.addEventListener('contextmenu',e=>{e.preventDefault();if(confirm('Knoten "'+n.label+'" löschen?')){flowNodes=flowNodes.filter(x=>x.id!==n.id);flowConns=flowConns.filter(c=>c.f!==n.id&&c.t!==n.id);saveData();renderFN();renderFC();toast('Gelöscht','success')}});
+    cv.appendChild(el);
+  });
+}
+
+function showNE(n){
+  document.querySelectorAll('.node-edit-popup').forEach(p=>p.remove());
+  const p=document.createElement('div');p.className='node-edit-popup';p.style.left=(n.x+150)+'px';p.style.top=n.y+'px';
+  p.innerHTML='<label>Bezeichnung</label><input type="text" value="'+n.label+'" id="neL"><label>Typ</label><select id="neT">'+['mandant','kunde','mahnung','erinnerung','sammelrechnung','rechnung','notiz'].map(t=>'<option '+(t===n.type?'selected':'')+'>'+t+'</option>').join('')+'</select><label>Notizen</label><textarea id="neN">'+(n.notes||'')+'</textarea><div class="pa"><button class="btn btn-sm btn-secondary" onclick="this.closest(\'.node-edit-popup\').remove()">Abbrechen</button><button class="btn btn-sm btn-primary" onclick="saveNE(\''+n.id+'\')">OK</button></div>';
+  p.addEventListener('mousedown',e=>e.stopPropagation());
+  $('fCanvas').appendChild(p);
+}
+function saveNE(nid){const n=flowNodes.find(x=>x.id===nid);if(!n)return;n.label=$('neL').value;n.type=$('neT').value;n.notes=$('neN').value;saveData();renderFN();renderFC();toast('Aktualisiert','success')}
+
+document.addEventListener('mousemove',e=>{if(!dragN)return;const cv=$('fCanvas');if(!cv)return;const r=cv.getBoundingClientRect();dragN.x=Math.max(0,e.clientX-r.left-dragOff.x);dragN.y=Math.max(0,e.clientY-r.top-dragOff.y);const el=document.getElementById('nd-'+dragN.id);if(el){el.style.left=dragN.x+'px';el.style.top=dragN.y+'px'}renderFC()});
+document.addEventListener('mouseup',()=>{if(dragN){saveData();dragN=null}});
+
+function renderFC(){
+  const svg=$('fSvg');if(!svg)return;svg.querySelectorAll('.flow-line').forEach(l=>l.remove());
+  flowConns.forEach(c=>{
+    const fe=document.getElementById('nd-'+c.f),te=document.getElementById('nd-'+c.t);
+    const fn=flowNodes.find(n=>n.id===c.f),tn=flowNodes.find(n=>n.id===c.t);
+    if(!fe||!te||!fn||!tn)return;
+    const x1=fn.x+fe.offsetWidth,y1=fn.y+fe.offsetHeight/2,x2=tn.x,y2=tn.y+te.offsetHeight/2,mx=(x1+x2)/2;
+    const l=document.createElementNS('http://www.w3.org/2000/svg','path');
+    l.setAttribute('class','flow-line');l.setAttribute('d','M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2);svg.appendChild(l);
+  });
+}
+function addFN(type){flowNodes.push({id:'fn'+(fnId++),type,label:type[0].toUpperCase()+type.slice(1)+' (neu)',notes:'',x:80+Math.random()*400,y:40+Math.random()*350});saveData();renderFN();toast('Knoten hinzugefügt','success')}
+function toggleConn(){
+  const b=$('connBtn');
+  if(connFrom){connFrom=null;b.textContent='Verbinden';b.className='btn btn-sm btn-secondary';return}
+  toast('Klicke Start → dann Ziel','info');b.textContent='Abbrechen';b.className='btn btn-sm btn-primary';
+  $('fCanvas').addEventListener('click',e=>{const nd=e.target.closest('.flow-node');if(!nd)return;const nid=nd.id.replace('nd-','');if(!connFrom){connFrom=nid;nd.style.boxShadow='0 0 0 3px #1d437e';toast('Start: '+flowNodes.find(n=>n.id===nid)?.label)}},{once:true});
+}
+
+// === TASK CRUD ===
+let editTid=null;
+function openTaskForm(tid){
+  editTid=tid||null;
+  const t=tid?tasks.find(x=>x.id===tid):null;
+  const selMid=t?t.mid:cm.id;
+  const custs=C.filter(c=>c.mid===selMid);
+  $('taskModal').style.display='flex';
+  $('taskModal').innerHTML='<div class="modal">'+
+    '<div class="modal-header"><h3>'+(t?'Aufgabe bearbeiten':'Neue Aufgabe')+'</h3><button class="modal-close" onclick="closeTF()">&times;</button></div>'+
+    '<div class="modal-body">'+
+      '<div class="form-group"><label>Name *</label><input id="tfName" value="'+(t?t.name:'')+'"></div>'+
+      '<div class="form-group"><label>Beschreibung</label><textarea id="tfDesc">'+(t?t.desc||'':'')+'</textarea></div>'+
+      '<div class="form-row">'+
+        '<div class="form-group"><label>Mandant *</label><select id="tfMid" onchange="updateTfCusts()">'+M.map(m=>'<option value="'+m.id+'" '+(m.id===selMid?'selected':'')+'>'+m.name+'</option>').join('')+'</select></div>'+
+        '<div class="form-group"><label>Kunde</label><select id="tfCid"><option value="">— Keiner —</option>'+custs.map(c=>'<option value="'+c.id+'" '+(t&&t.cid===c.id?'selected':'')+'>'+c.name+'</option>').join('')+'</select></div>'+
+      '</div>'+
+      '<div class="form-row">'+
+        '<div class="form-group"><label>Typ</label><select id="tfType">'+['MAHNUNG','ERINNERUNG','SAMMELRECHNUNG','RECHNUNG','PRUEFUNG','ERFASSUNG','VERTRAG','BERICHT'].map(v=>'<option '+(t&&t.type===v?'selected':'')+'>'+v+'</option>').join('')+'</select></div>'+
+        '<div class="form-group"><label>Status</label><select id="tfStatus">'+['OPEN','OVERDUE','READY','PENDING','DONE'].map(v=>'<option '+(t&&t.status===v?'selected':'')+'>'+v+'</option>').join('')+'</select></div>'+
+      '</div>'+
+      '<div class="form-row">'+
+        '<div class="form-group"><label>Priorität</label><select id="tfPri"><option value="HIGH" '+(t&&t.pri==='HIGH'?'selected':'')+'>Hoch</option><option value="MED" '+(!t||t.pri==='MED'?'selected':'')+'>Mittel</option><option value="LOW" '+(t&&t.pri==='LOW'?'selected':'')+'>Niedrig</option></select></div>'+
+        '<div class="form-group"><label>Fällig am</label><input type="date" id="tfDue" value="'+(t&&t.due||'')+'"></div>'+
+      '</div>'+
+      '<div class="form-row">'+
+        '<div class="form-group"><label>Betrag (EUR)</label><input type="number" step="0.01" id="tfAmt" value="'+(t?t.amt||'':'')+'"></div>'+
+      '</div>'+
+      '<div class="form-group"><label>Empfehlung / Notiz</label><textarea id="tfNote">'+(t?t.note||'':'')+'</textarea></div>'+
+    '</div>'+
+    '<div class="modal-footer"><button class="btn btn-secondary" onclick="closeTF()">Abbrechen</button><button class="btn btn-primary" onclick="saveTask()">Speichern</button></div>'+
+  '</div>';
+}
+function updateTfCusts(){
+  const mid=$('tfMid').value;
+  const custs=C.filter(c=>c.mid===mid);
+  $('tfCid').innerHTML='<option value="">— Keiner —</option>'+custs.map(c=>'<option value="'+c.id+'">'+c.name+'</option>').join('');
+}
+function closeTF(){$('taskModal').style.display='none';editTid=null}
+
+function saveTask(){
+  const name=$('tfName').value.trim();
+  if(!name){toast('Bitte Name eingeben','error');return}
+  const d={name,desc:$('tfDesc').value,type:$('tfType').value,status:$('tfStatus').value,pri:$('tfPri').value,due:$('tfDue').value||null,amt:parseFloat($('tfAmt').value)||0,cid:$('tfCid').value,note:$('tfNote').value,mid:$('tfMid').value};
+  if(editTid){const i=tasks.findIndex(t=>t.id===editTid);if(i>=0)tasks[i]={...tasks[i],...d};toast('Aufgabe aktualisiert','success')}
+  else{tasks.push({id:id(),...d});toast('Aufgabe erstellt','success')}
+  saveData();closeTF();renderLN();
+}
+
+function delTask(tid){const t=tasks.find(x=>x.id===tid);if(!t||!confirm('"'+t.name+'" löschen?'))return;tasks=tasks.filter(x=>x.id!==tid);saveData();closeDetail();toast('Gelöscht','success');renderLN()}
+function togDone(tid){const t=tasks.find(x=>x.id===tid);if(!t)return;t.status=t.status==='DONE'?'OPEN':'DONE';saveData();toast(t.status==='DONE'?'Erledigt!':'Wieder geöffnet','success');renderLN()}
+
+// === DETAIL PANEL ===
+function openDetail(tid){
+  const t=tasks.find(x=>x.id===tid);if(!t)return;
+  const c=cn(t.cid);
+  const inv=invoices.find(i=>i.id===t.invoiceId);
+  const p=$('detailPanel');p.style.display='flex';
+  p.innerHTML=
+    '<div class="detail-header"><h3>'+t.name+'</h3><button class="modal-close" onclick="closeDetail()">&times;</button></div>'+
+    '<div class="detail-body">'+
+      '<div class="detail-field"><div class="detail-label">Mandant</div><div class="detail-value"><span class="mandant-dot" style="background:'+(M.find(x=>x.id===t.mid)?.color||'#888')+';display:inline-block;vertical-align:middle;margin-right:6px"></span>'+(M.find(x=>x.id===t.mid)?.name||'—')+'</div></div>'+
+      '<div class="detail-field"><div class="detail-label">Typ / Status</div><div class="detail-value"><span class="type-tag type-'+t.type+'" style="margin-right:8px">'+t.type+'</span>'+t.status+'</div></div>'+
+      '<div class="detail-field"><div class="detail-label">Priorität</div><div class="detail-value">'+(t.pri==='HIGH'?'Hoch':t.pri==='MED'?'Mittel':'Niedrig')+'</div></div>'+
+      '<div class="detail-field"><div class="detail-label">Beschreibung</div><div class="detail-value">'+(t.desc||'—')+'</div></div>'+
+      (c?'<div class="detail-field"><div class="detail-label">Kunde</div><div class="detail-value">'+c+'</div></div>':'')+
+      (t.amt?'<div class="detail-field"><div class="detail-label">Betrag</div><div class="detail-value" style="font-size:20px;font-weight:700">'+fc(t.amt)+'</div></div>':'')+
+      '<div class="detail-field"><div class="detail-label">Fällig am</div><div class="detail-value">'+fd(t.due)+'</div></div>'+
+      (t.note?'<div class="detail-field"><div class="detail-label">Empfehlung</div><div class="detail-value" style="background:#fffbeb;padding:10px;border-radius:8px;border-left:3px solid #ca8a04">'+t.note+'</div></div>':'')+
+      (inv?'<div class="detail-field"><div class="detail-label">Verknüpfte Rechnung</div><div class="detail-value"><span class="inv-link" onclick="goPage(\'invoices\')">RE '+inv.num+' — '+fc(inv.amt)+' ('+inv.status+')</span></div></div>':'')+
+    '</div>'+
+    '<div class="detail-actions">'+
+      (['RECHNUNG','SAMMELRECHNUNG','ERFASSUNG'].includes(t.type)&&t.status!=='DONE'&&!inv?'<button class="btn btn-primary" onclick="createInv(\''+t.id+'\')">Rechnung erstellen</button>':'')+
+      (t.type==='MAHNUNG'&&t.status!=='DONE'?'<button class="btn btn-danger" onclick="sendMahn(\''+t.id+'\')">Mahnung senden</button>':'')+
+      '<button class="btn btn-secondary" onclick="openTaskForm(\''+t.id+'\')">Bearbeiten</button>'+
+      (t.status!=='DONE'?'<button class="btn btn-green" onclick="togDone(\''+t.id+'\')">Erledigt</button>':'')+
+      '<button class="btn btn-danger btn-sm" onclick="delTask(\''+t.id+'\')">Löschen</button>'+
+      (inv?'<button class="btn btn-secondary btn-sm" onclick="goPage(\'invoices\')">→ Rechnung</button>':'')+
+    '</div>';
+}
+function closeDetail(){$('detailPanel').style.display='none'}
+
+// === INVOICE FROM TASK ===
+function createInv(tid){
+  const t=tasks.find(x=>x.id===tid);if(!t)return;
+  const tm=M.find(x=>x.id===t.mid)||cm;
+  invNo++;
+  const num=tm.prefix+' '+new Date().getFullYear()+'/'+String(invNo).padStart(3,'0');
+  const inv={id:'i'+Date.now(),num,cid:t.cid,amt:t.amt||0,status:'OPEN',date:new Date().toISOString().slice(0,10),mid:tm.id,taskId:t.id};
+  invoices.push(inv);
+  t.status='DONE';t.completedAt=new Date().toISOString();t.invoiceId=inv.id;
+  saveData();toast('Rechnung '+num+' erstellt ('+fc(inv.amt)+')','success');
+  renderLN();openDetail(tid);
+}
+
+function sendMahn(tid){
+  const t=tasks.find(x=>x.id===tid);if(!t)return;
+  t.status='DONE';t.completedAt=new Date().toISOString();
+  saveData();toast('Mahnung an '+cn(t.cid)+' versendet','success');
+  renderLN();
+}
+
+// === PDF GENERATION ===
+function generatePDF(iid){
+  const inv=invoices.find(x=>x.id===iid);if(!inv)return;
+  const m=M.find(x=>x.id===inv.mid);if(!m)return;
+  const bv=m.briefvorlage||{};
+  const cust=C.find(x=>x.id===inv.cid);
+
+  try{
+    const{jsPDF}=window.jspdf;
+    const doc=new jsPDF();
+    const w=doc.internal.pageSize.getWidth();
+
+    // Header
+    doc.setFontSize(10);doc.setTextColor(100);
+    doc.text(bv.firma||m.name,14,20);
+    if(bv.strasse)doc.text(bv.strasse,14,25);
+    doc.text((bv.plz||'')+' '+(bv.ort||''),14,30);
+    doc.text(bv.land||'',14,35);
+    if(bv.tel)doc.text('Tel: '+bv.tel,14,40);
+    if(bv.email)doc.text('E-Mail: '+bv.email,14,45);
+    if(bv.web)doc.text('Web: '+bv.web,14,50);
+
+    // Recipient
+    doc.setFontSize(11);doc.setTextColor(0);
+    doc.text(cust?cust.name:'',14,70);
+
+    // Title
+    doc.setFontSize(18);doc.setTextColor(29,67,126);
+    doc.text(bv.kopfzeile||'Rechnung',14,90);
+
+    // Invoice details
+    doc.setFontSize(10);doc.setTextColor(0);
+    doc.text('Rechnungsnr.: '+inv.num,14,100);
+    doc.text('Datum: '+fd(inv.date),14,106);
+    doc.text('Zahlungsziel: '+(bv.zahlungsziel||14)+' Tage',14,112);
+
+    // Line
+    doc.setDrawColor(200);doc.line(14,118,w-14,118);
+
+    // Positions
+    let y=128;
+    doc.setFontSize(10);doc.setFont(undefined,'bold');
+    doc.text('Pos.',14,y);doc.text('Beschreibung',30,y);doc.text('Betrag',w-40,y,{align:'right'});
+    doc.setFont(undefined,'normal');
+    y+=8;
+    if(inv.positionen){
+      doc.text('1',14,y);doc.text(inv.positionen,30,y);doc.text(fc(inv.amt),w-40,y,{align:'right'});
+      y+=8;
+    }else{
+      doc.text('1',14,y);doc.text('Leistungen gemäß Vereinbarung',30,y);doc.text(fc(inv.amt),w-40,y,{align:'right'});
+      y+=8;
+    }
+
+    // Total
+    doc.setDrawColor(200);doc.line(14,y+2,w-14,y+2);
+    y+=12;
+    doc.setFont(undefined,'bold');doc.setFontSize(12);
+    doc.text('Gesamt:',30,y);doc.text(fc(inv.amt),w-40,y,{align:'right'});
+
+    // Bank details
+    y+=20;
+    doc.setFontSize(9);doc.setFont(undefined,'normal');doc.setTextColor(100);
+    if(bv.bank)doc.text('Bank: '+bv.bank,14,y);
+    if(bv.iban){y+=5;doc.text('IBAN: '+bv.iban,14,y)}
+    if(bv.bic){y+=5;doc.text('BIC: '+bv.bic,14,y)}
+    if(bv.steuernr){y+=5;doc.text('Steuernr.: '+bv.steuernr,14,y)}
+    if(bv.ustidnr){y+=5;doc.text('USt-IdNr.: '+bv.ustidnr,14,y)}
+
+    // Footer
+    if(bv.fusszeile){
+      doc.setFontSize(9);doc.setTextColor(120);
+      doc.text(bv.fusszeile,w/2,280,{align:'center'});
+    }
+
+    doc.save('Rechnung_'+inv.num.replace(/\s+/g,'_')+'.pdf');
+    toast('PDF erstellt: Rechnung_'+inv.num,'success');
+  }catch(e){
+    toast('PDF-Fehler: '+e.message,'error');
+    console.error(e);
+  }
+}
+
+// === EMAIL ===
+function openEmailModal(iid){
+  const inv=invoices.find(x=>x.id===iid);if(!inv)return;
+  const m=M.find(x=>x.id===inv.mid);if(!m)return;
+  const bv=m.briefvorlage||{};
+  const cust=C.find(x=>x.id===inv.cid);if(!cust)return;
+
+  // Replace placeholders
+  const replacePH=(str)=>(str||'')
+    .replace(/\{nr\}/g,inv.num)
+    .replace(/\{betrag\}/g,fc(inv.amt))
+    .replace(/\{mandant\}/g,m.name)
+    .replace(/\{firma\}/g,bv.firma||m.name)
+    .replace(/\{kunde\}/g,cust.name)
+    .replace(/\{zahlungsziel\}/g,String(bv.zahlungsziel||14))
+    .replace(/\{datum\}/g,fd(inv.date));
+
+  const subject=replacePH(cust.emailSubject||'Rechnung {nr}');
+  const body=replacePH(cust.emailBody||'');
+
+  $('taskModal').style.display='flex';
+  $('taskModal').innerHTML='<div class="modal">'+
+    '<div class="modal-header"><h3>E-Mail senden — RE '+inv.num+'</h3><button class="modal-close" onclick="closeTF()">&times;</button></div>'+
+    '<div class="modal-body">'+
+      '<div class="form-row">'+
+        '<div class="form-group"><label>An</label><input id="emTo" value="'+(cust.email||'')+'"></div>'+
+        '<div class="form-group"><label>CC</label><input id="emCC" value="'+(cust.cc||'')+'"></div>'+
+      '</div>'+
+      '<div class="form-group"><label>Betreff</label><input id="emSubject" value="'+subject.replace(/"/g,'&quot;')+'"></div>'+
+      '<div class="form-group"><label>Nachricht</label><textarea id="emBody" style="min-height:180px">'+body+'</textarea></div>'+
+      '<div style="padding:12px;background:var(--gray-light);border-radius:8px;font-size:12px;color:var(--gray)">'+
+        '<strong>Anhang:</strong> Rechnung_'+inv.num.replace(/\s+/g,'_')+'.pdf (wird automatisch generiert)'+
+      '</div>'+
+    '</div>'+
+    '<div class="modal-footer">'+
+      '<button class="btn btn-secondary" onclick="closeTF()">Abbrechen</button>'+
+      '<button class="btn btn-primary" onclick="generatePDF(\''+inv.id+'\');closeTF()">Nur PDF erstellen</button>'+
+      '<button class="btn btn-turquoise" onclick="sendEmail(\''+inv.id+'\')">E-Mail öffnen</button>'+
+    '</div>'+
+  '</div>';
+}
+
+function sendEmail(iid){
+  const to=$('emTo').value;
+  const cc=$('emCC').value;
+  const subject=encodeURIComponent($('emSubject').value);
+  const body=encodeURIComponent($('emBody').value);
+  if(!to){toast('Bitte E-Mail-Adresse eingeben','error');return}
+
+  // Generate PDF first
+  generatePDF(iid);
+
+  // Open mailto
+  let mailto='mailto:'+to+'?subject='+subject+'&body='+body;
+  if(cc)mailto+='&cc='+cc;
+  window.open(mailto);
+
+  // Save email to customer
+  const inv=invoices.find(x=>x.id===iid);
+  if(inv){const cust=C.find(x=>x.id===inv.cid);if(cust){cust.email=$('emTo').value;cust.cc=$('emCC').value;saveData()}}
+
+  closeTF();
+  toast('E-Mail-Client geöffnet + PDF erstellt','success');
+}
+
+// === PIN LOGIN ===
+function pinNext(n){
+  const v=document.getElementById('pin'+n).value;
+  if(v&&n<4)document.getElementById('pin'+(n+1)).focus();
+  if(n===4&&v)verifyPin();
+}
+function pinKey(e,n){
+  if(e.key==='Backspace'&&!document.getElementById('pin'+n).value&&n>1){
+    document.getElementById('pin'+(n-1)).focus();
+  }
+  if(e.key==='Enter')verifyPin();
+}
+function verifyPin(){
+  const pin=[1,2,3,4].map(i=>document.getElementById('pin'+i).value).join('');
+  if(pin.length<4){document.getElementById('pinError').textContent='Bitte 4-stelligen PIN eingeben';return}
+  if(pin===APP_PIN){
+    document.getElementById('pinScreen').style.display='none';
+    initApp();
+  }else{
+    document.getElementById('pinError').textContent='Falscher PIN — bitte nochmal versuchen';
+    [1,2,3,4].forEach(i=>{document.getElementById('pin'+i).value='';document.getElementById('pin'+i).style.borderColor='#dc2626'});
+    document.getElementById('pin1').focus();
+    setTimeout(()=>[1,2,3,4].forEach(i=>document.getElementById('pin'+i).style.borderColor='#E8E8ED'),1500);
+  }
+}
+
+// === INIT ===
+function initApp(){
+  const hadSaved=loadData();
+  if(!hadSaved){toast('Willkommen bei xMasterCenter — Keine gespeicherten Daten.','info')}
+  renderM();renderNav();renderPage();updateSyncBadge();
+}
+
+// Starte mit PIN-Screen (App wird erst nach PIN geladen)
+document.getElementById('pin1').focus();
+</script>
+</body>
+</html>
