@@ -312,25 +312,25 @@ const M=[
 ];
 
 const C=[
-  {id:'pm',name:'PM PROMEDIA LTD',mid:'baleo',email:'',cc:'',
+  {id:'pm',name:'PM PROMEDIA LTD',mid:'baleo',ansprechpartner:'',strasse:'',plz:'',ort:'',land:'',tel:'',steuernr:'',email:'',cc:'',
    services:[{name:'Social Media Betreuung',price:300,unit:'Monat'},{name:'Hosting + Wartung',price:450,unit:'Monat'},{name:'SLA Vertrag',price:5400,unit:'Jahr'}],
    emailSubject:'Rechnung {nr} — {mandant}',emailBody:'Sehr geehrte Damen und Herren,\n\nanbei erhalten Sie unsere Rechnung Nr. {nr} über {betrag}.\n\nBitte überweisen Sie den Betrag innerhalb von {zahlungsziel} Tagen.\n\nMit freundlichen Grüßen\n{firma}'},
-  {id:'jtg',name:'JTG Werbeverlag GmbH',mid:'baleo',email:'',cc:'',
+  {id:'jtg',name:'JTG Werbeverlag GmbH',mid:'baleo',ansprechpartner:'',strasse:'',plz:'',ort:'',land:'',tel:'',steuernr:'',email:'',cc:'',
    services:[{name:'Sammelrechnung Quartal',price:8500,unit:'Quartal'},{name:'Einzelrechnung',price:3200,unit:'Stück'}],
    emailSubject:'Rechnung {nr} — {mandant}',emailBody:'Sehr geehrte Damen und Herren,\n\nanbei erhalten Sie unsere Rechnung Nr. {nr} über {betrag}.\n\nBitte überweisen Sie den Betrag innerhalb von {zahlungsziel} Tagen.\n\nMit freundlichen Grüßen\n{firma}'},
-  {id:'abc',name:'ABC Digitalmarketing',mid:'baleo',email:'',cc:'',
+  {id:'abc',name:'ABC Digitalmarketing',mid:'baleo',ansprechpartner:'',strasse:'',plz:'',ort:'',land:'',tel:'',steuernr:'',email:'',cc:'',
    services:[],
    emailSubject:'Rechnung {nr} — {mandant}',emailBody:'Sehr geehrte Damen und Herren,\n\nanbei erhalten Sie unsere Rechnung Nr. {nr} über {betrag}.\n\nBitte überweisen Sie den Betrag innerhalb von {zahlungsziel} Tagen.\n\nMit freundlichen Grüßen\n{firma}'},
-  {id:'hans',name:'Hanseatik Verlag',mid:'nordlink',email:'',cc:'',
+  {id:'hans',name:'Hanseatik Verlag',mid:'nordlink',ansprechpartner:'',strasse:'',plz:'',ort:'',land:'',tel:'',steuernr:'',email:'',cc:'',
    services:[{name:'Medienproduktion',price:4100,unit:'Stück'}],
    emailSubject:'Rechnung {nr} — {mandant}',emailBody:'Sehr geehrte Damen und Herren,\n\nanbei erhalten Sie unsere Rechnung Nr. {nr} über {betrag}.\n\nBitte überweisen Sie den Betrag innerhalb von {zahlungsziel} Tagen.\n\nMit freundlichen Grüßen\n{firma}'},
-  {id:'baltic',name:'Baltic Print GmbH',mid:'nordlink',email:'',cc:'',
+  {id:'baltic',name:'Baltic Print GmbH',mid:'nordlink',ansprechpartner:'',strasse:'',plz:'',ort:'',land:'',tel:'',steuernr:'',email:'',cc:'',
    services:[{name:'Druckproduktion',price:980,unit:'Stück'}],
    emailSubject:'Rechnung {nr} — {mandant}',emailBody:'Sehr geehrte Damen und Herren,\n\nanbei erhalten Sie unsere Rechnung Nr. {nr} über {betrag}.\n\nBitte überweisen Sie den Betrag innerhalb von {zahlungsziel} Tagen.\n\nMit freundlichen Grüßen\n{firma}'},
-  {id:'yildiz',name:'Yildiz Ajans',mid:'ilexis',email:'',cc:'',
+  {id:'yildiz',name:'Yildiz Ajans',mid:'ilexis',ansprechpartner:'',strasse:'',plz:'',ort:'',land:'',tel:'',steuernr:'',email:'',cc:'',
    services:[{name:'Kampagnen-Management',price:1800,unit:'Monat'},{name:'Social Media',price:2200,unit:'Monat'}],
    emailSubject:'Fatura {nr} — {mandant}',emailBody:'Sayın Yetkili,\n\nEkte {nr} numaralı {betrag} tutarındaki faturamızı bulabilirsiniz.\n\nÖdemenin {zahlungsziel} gün içinde yapılmasını rica ederiz.\n\nSaygılarımızla\n{firma}'},
-  {id:'bospho',name:'Bosphorus Media',mid:'ilexis',email:'',cc:'',
+  {id:'bospho',name:'Bosphorus Media',mid:'ilexis',ansprechpartner:'',strasse:'',plz:'',ort:'',land:'',tel:'',steuernr:'',email:'',cc:'',
    services:[],
    emailSubject:'Fatura {nr} — {mandant}',emailBody:'Sayın Yetkili,\n\nEkte {nr} numaralı {betrag} tutarındaki faturamızı bulabilirsiniz.\n\nÖdemenin {zahlungsziel} gün içinde yapılmasını rica ederiz.\n\nSaygılarımızla\n{firma}'}
 ];
@@ -527,14 +527,15 @@ function renderCustomers(){
   const mc=C.filter(c=>c.mid===cm.id);
   $('pageKpis').innerHTML='';
   $('pageToolbar').innerHTML='<div class="toolbar"><div style="font-size:13px;color:var(--gray);font-weight:600">Kunden — '+cm.name+'</div><span style="flex:1"></span><button class="btn btn-primary" onclick="openCustomerForm()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Neuer Kunde</button></div>';
-  let html='<table class="inv-table"><thead><tr><th>Kunde</th><th>E-Mail</th><th>CC</th><th>Leistungen</th><th>Offene Aufgaben</th><th>Rechnungen</th><th>Aktionen</th></tr></thead><tbody>';
+  let html='<table class="inv-table"><thead><tr><th>Kunde</th><th>Anschrift</th><th>Kontakt</th><th>Leistungen</th><th>Aufgaben</th><th>Rg.</th><th>Aktionen</th></tr></thead><tbody>';
   mc.forEach(c=>{
     const ct=tasks.filter(t=>t.cid===c.id&&t.mid===cm.id&&t.status!=='DONE');
     const ci=invoices.filter(i=>i.cid===c.id&&i.mid===cm.id);
+    const adr=[c.strasse,[(c.plz||''),(c.ort||'')].filter(Boolean).join(' '),c.land].filter(Boolean).join(', ');
     html+='<tr>'+
-      '<td style="font-weight:600">'+c.name+'</td>'+
-      '<td style="font-size:12px">'+(c.email||'<span style="color:#ccc">—</span>')+'</td>'+
-      '<td style="font-size:12px">'+(c.cc||'<span style="color:#ccc">—</span>')+'</td>'+
+      '<td><div style="font-weight:600">'+c.name+'</div>'+(c.ansprechpartner?'<div style="font-size:11px;color:var(--gray)">'+c.ansprechpartner+'</div>':'')+'</td>'+
+      '<td style="font-size:12px">'+(adr||'<span style="color:#ccc">— keine Anschrift —</span>')+'</td>'+
+      '<td style="font-size:12px">'+(c.email||'—')+(c.tel?'<br>'+c.tel:'')+'</td>'+
       '<td style="font-size:12px">'+(c.services&&c.services.length?c.services.map(s=>s.name+' '+fc(s.price)+'/'+s.unit).join(', '):'—')+'</td>'+
       '<td>'+ct.length+'</td>'+
       '<td>'+ci.length+'</td>'+
@@ -552,8 +553,19 @@ function openCustomerForm(cid){
   $('taskModal').style.display='flex';
   $('taskModal').innerHTML='<div class="modal">'+
     '<div class="modal-header"><h3>'+(c?'Kunde bearbeiten':'Neuer Kunde')+'</h3><button class="modal-close" onclick="closeTF()">&times;</button></div>'+
-    '<div class="modal-body">'+
+    '<div class="modal-body" style="max-height:70vh;overflow-y:auto">'+
       '<div class="form-group"><label>Firmenname *</label><input id="cfName" value="'+(c?c.name:'')+'"></div>'+
+      '<div class="form-group"><label>Ansprechpartner</label><input id="cfAnsprech" value="'+(c?c.ansprechpartner||'':'')+'"></div>'+
+      '<div class="form-group"><label>Straße + Hausnr.</label><input id="cfStrasse" value="'+(c?c.strasse||'':'')+'"></div>'+
+      '<div class="form-row">'+
+        '<div class="form-group" style="flex:1"><label>PLZ</label><input id="cfPlz" value="'+(c?c.plz||'':'')+'"></div>'+
+        '<div class="form-group" style="flex:3"><label>Ort</label><input id="cfOrt" value="'+(c?c.ort||'':'')+'"></div>'+
+      '</div>'+
+      '<div class="form-row">'+
+        '<div class="form-group"><label>Land</label><input id="cfLand" value="'+(c?c.land||'':'')+'"></div>'+
+        '<div class="form-group"><label>Telefon</label><input id="cfTel" value="'+(c?c.tel||'':'')+'"></div>'+
+      '</div>'+
+      '<div class="form-group"><label>Steuernr. / USt-IdNr.</label><input id="cfSteuer" value="'+(c?c.steuernr||'':'')+'"></div>'+
       '<div class="form-row">'+
         '<div class="form-group"><label>E-Mail</label><input id="cfEmail" type="email" value="'+(c?c.email||'':'')+'"></div>'+
         '<div class="form-group"><label>CC</label><input id="cfCC" value="'+(c?c.cc||'':'')+'"></div>'+
@@ -584,11 +596,12 @@ function saveCustomer(cid){
     const u=r.querySelector('.svc-unit').value;
     if(n)svcs.push({name:n,price:p,unit:u});
   });
+  const addr={ansprechpartner:$('cfAnsprech').value,strasse:$('cfStrasse').value,plz:$('cfPlz').value,ort:$('cfOrt').value,land:$('cfLand').value,tel:$('cfTel').value,steuernr:$('cfSteuer').value};
   if(cid){
     const c=C.find(x=>x.id===cid);
-    if(c){c.name=name;c.email=$('cfEmail').value;c.cc=$('cfCC').value;c.emailSubject=$('cfSubject').value;c.emailBody=$('cfBody').value;c.services=svcs}
+    if(c){Object.assign(c,{name,...addr,email:$('cfEmail').value,cc:$('cfCC').value,emailSubject:$('cfSubject').value,emailBody:$('cfBody').value,services:svcs})}
   }else{
-    C.push({id:'c'+Date.now(),name,mid:cm.id,email:$('cfEmail').value,cc:$('cfCC').value,services:svcs,emailSubject:$('cfSubject').value,emailBody:$('cfBody').value});
+    C.push({id:'c'+Date.now(),name,mid:cm.id,...addr,email:$('cfEmail').value,cc:$('cfCC').value,services:svcs,emailSubject:$('cfSubject').value,emailBody:$('cfBody').value});
   }
   saveData();closeTF();toast('Kunde gespeichert','success');renderCustomers();
 }
