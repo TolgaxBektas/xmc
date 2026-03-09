@@ -469,6 +469,7 @@ function setPageTitle(name,isXBrand){
 // === PAGE ROUTER ===
 function renderPage(){
   $('pageToolbar').innerHTML='';$('pageKpis').innerHTML='';
+  hideStickyBar();
   if(curPage==='dashboard'){setPageTitle('ActionCentral',true);renderDashboard()}
   else if(curPage==='leistungsnetz'){setPageTitle('WorkCoordination',true);renderLN()}
   else if(curPage==='invoices'){setPageTitle('Accounts',true);renderInvoices()}
@@ -953,6 +954,7 @@ function renderLN(){
     '<select class="filter-select" id="fStatus" onchange="renderLNContent()"><option value="">Alle Status</option><option value="OVERDUE">Überfällig</option><option value="READY">Bereit</option><option value="OPEN">Offen</option><option value="PENDING">Wartend</option><option value="DONE">Erledigt</option></select>'+
     '<button class="btn btn-primary" onclick="openTaskForm()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Aufgabe</button>'+
   '</div>';
+  renderStickyBar();
   renderLNContent();
 }
 
