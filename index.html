@@ -198,6 +198,29 @@ svg.flow-svg{position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;poi
 .service-row input{flex:1}
 .service-row .amt{width:100px}
 ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#ccc;border-radius:3px}::-webkit-scrollbar-thumb:hover{background:#aaa}
+/* === RESPONSIVE === */
+@media(max-width:768px){
+  body{flex-direction:column}
+  .sidebar{width:100%;height:auto;max-height:60px;flex-direction:row;border-right:none;border-bottom:1px solid var(--gray-border);overflow:hidden;transition:max-height .3s ease}
+  .sidebar.mobile-open{max-height:100vh;flex-direction:column;position:fixed;z-index:999;height:100vh;overflow-y:auto}
+  .sidebar-logo{height:60px;min-height:60px}
+  .nav-items{display:flex;flex-direction:column;padding:8px}
+  .mandant-switcher{display:none}
+  .sidebar.mobile-open .mandant-switcher{display:block}
+  .user-panel{display:none}
+  .sidebar.mobile-open .user-panel{display:block}
+  .page-header{padding:12px 16px 0}
+  .kpi-strip{padding:10px 16px;gap:8px}
+  .kpi-card{min-width:100px;padding:10px 14px}
+  .toolbar{padding:8px 16px;flex-wrap:wrap}
+  .content-area{padding:0 16px 16px}
+  .detail-panel{width:100%!important}
+  .modal{width:95vw!important}
+  .kanban-board{flex-direction:column}
+  .kanban-col{min-width:100%;width:100%}
+}
+.mobile-menu-btn{display:none;background:none;border:none;cursor:pointer;padding:8px;color:var(--gray)}
+@media(max-width:768px){.mobile-menu-btn{display:flex;align-items:center;margin-left:auto;padding-right:16px}}
 /* === STICKY NOTES === */
 .sticky-bar{display:flex;flex-wrap:wrap;gap:12px;padding:14px 16px;background:#fffde7;border-bottom:2px solid #f9c30b;align-items:flex-start}
 .sticky-bar-header{width:100%;display:flex;align-items:center;gap:8px;margin-bottom:4px}
@@ -248,6 +271,7 @@ svg.flow-svg{position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;poi
 <aside class="sidebar">
   <div class="sidebar-logo">
     <span class="xlogo xlogo-lg"><span class="x">x</span><span class="upper">MASTER</span><span class="lower">center</span></span>
+    <button class="mobile-menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('mobile-open')"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
   </div>
   <div class="mandant-switcher" style="position:relative">
     <button class="mandant-btn" onclick="toggleMandantDD()">
@@ -263,6 +287,7 @@ svg.flow-svg{position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;poi
       <div class="user-avatar">TB</div>
       <div><div class="user-name">Tolga Bektas</div><div class="user-email">tolga.bektas@ilexis.com.tr</div></div>
     </div>
+    <button onclick="logout()" style="width:calc(100% - 24px);margin:4px 12px 8px;padding:6px;background:none;border:1px solid var(--gray-border);border-radius:8px;font-size:12px;color:var(--gray);cursor:pointer;transition:all .15s" onmouseover="this.style.background='#fef2f2';this.style.color='#dc2626';this.style.borderColor='#dc2626'" onmouseout="this.style.background='none';this.style.color='var(--gray)';this.style.borderColor='var(--gray-border)'">Abmelden</button>
   </div>
 </aside>
 
@@ -288,7 +313,9 @@ function xlogo(name,size){
 }
 
 // === CONFIG ===
-const APP_PIN='1907';
+// PIN stored as SHA-256 hash for basic security (original: user-defined)
+const APP_PIN_HASH='a26a40d4ee6674e118e965209b0527fc059a3d6003e87b65e3c0999d47643e72'; // hash of '1907'
+async function hashPin(pin){const enc=new TextEncoder().encode(pin);const buf=await crypto.subtle.digest('SHA-256',enc);return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('')}
 let syncStatus='local'; // local mode for GitHub Pages
 // App starts on dashboard (Wiedervorlage)
 
@@ -346,14 +373,14 @@ function loadData(){
   }catch(e){return false}
 }
 function applyData(d){
-  if(d.tasks)tasks=d.tasks;
-  if(d.invoices)invoices=d.invoices;
-  if(d.flowNodes)flowNodes=d.flowNodes;
-  if(d.flowConns)flowConns=d.flowConns;
-  if(d.invNo)invNo=d.invNo;
-  if(d.stickyNotes)stickyNotes=d.stickyNotes;
-  if(d.M)d.M.forEach(sm=>{const m=M.find(x=>x.id===sm.id);if(m){Object.assign(m,sm)}});
-  if(d.C)d.C.forEach(sc=>{const c=C.find(x=>x.id===sc.id);if(c){Object.assign(c,sc)}else{C.push(sc)}});
+  if(Array.isArray(d.tasks))tasks=d.tasks;
+  if(Array.isArray(d.invoices))invoices=d.invoices;
+  if(Array.isArray(d.flowNodes))flowNodes=d.flowNodes;
+  if(Array.isArray(d.flowConns))flowConns=d.flowConns;
+  if(typeof d.invNo==='number')invNo=d.invNo;
+  if(Array.isArray(d.stickyNotes))stickyNotes=d.stickyNotes;
+  if(Array.isArray(d.M))d.M.forEach(sm=>{if(!sm||!sm.id)return;const m=M.find(x=>x.id===sm.id);if(m){Object.assign(m,sm)}});
+  if(Array.isArray(d.C))d.C.forEach(sc=>{if(!sc||!sc.id)return;const c=C.find(x=>x.id===sc.id);if(c){Object.assign(c,sc)}else{C.push(sc)}});
 }
 function updateSyncBadge(){
   const el=document.getElementById('syncBadge');
@@ -423,6 +450,7 @@ let accountsOpen=false;
 
 // === HELPERS ===
 const $=s=>document.getElementById(s);
+const esc=s=>{const d=document.createElement('div');d.textContent=s;return d.innerHTML};
 const toast=(m,t='info')=>{const e=document.createElement('div');e.className='toast '+t;e.textContent=m;$('toastContainer').appendChild(e);setTimeout(()=>e.remove(),3000)};
 const fc=n=>n.toLocaleString('de-DE',{style:'currency',currency:'EUR'});
 const fd=d=>d?new Date(d).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
@@ -1089,9 +1117,9 @@ function renderFN(){
     el.style.left=n.x+'px';el.style.top=n.y+'px';
     el.innerHTML='<div class="flow-node-type">'+n.type+'</div><div class="flow-node-label">'+n.label+'</div>'+(n.notes?'<div class="flow-node-notes">'+n.notes+'</div>':'');
     el.addEventListener('mousedown',e=>{
-      if(connFrom){if(connFrom!==n.id){flowConns.push({f:connFrom,t:n.id});saveData();toast('Verbindung erstellt','success');renderFC()}connFrom=null;$('connBtn').textContent='Verbinden';$('connBtn').className='btn btn-sm btn-secondary';return}
+      if(connFrom)return; // Connection mode handled by toggleConn click handler
       if(e.target.closest('.node-edit-popup'))return;
-      dragN=n;const r=el.getBoundingClientRect();const cr=cv.getBoundingClientRect();dragOff.x=e.clientX-r.left;dragOff.y=e.clientY-r.top;e.preventDefault();
+      dragN=n;const r=el.getBoundingClientRect();dragOff.x=e.clientX-r.left;dragOff.y=e.clientY-r.top;e.preventDefault();
     });
     el.addEventListener('dblclick',e=>{e.stopPropagation();showNE(n)});
     el.addEventListener('contextmenu',e=>{e.preventDefault();if(confirm('Knoten "'+n.label+'" löschen?')){flowNodes=flowNodes.filter(x=>x.id!==n.id);flowConns=flowConns.filter(c=>c.f!==n.id&&c.t!==n.id);saveData();renderFN();renderFC();toast('Gelöscht','success')}});
@@ -1126,8 +1154,22 @@ function addFN(type){flowNodes.push({id:'fn'+(fnId++),type,label:type[0].toUpper
 function toggleConn(){
   const b=$('connBtn');
   if(connFrom){connFrom=null;b.textContent='Verbinden';b.className='btn btn-sm btn-secondary';return}
-  toast('Klicke Start → dann Ziel','info');b.textContent='Abbrechen';b.className='btn btn-sm btn-primary';
-  $('fCanvas').addEventListener('click',e=>{const nd=e.target.closest('.flow-node');if(!nd)return;const nid=nd.id.replace('nd-','');if(!connFrom){connFrom=nid;nd.style.boxShadow='0 0 0 3px #1d437e';toast('Start: '+flowNodes.find(n=>n.id===nid)?.label)}},{once:true});
+  connFrom=null;
+  toast('Klicke Start-Knoten','info');b.textContent='Abbrechen';b.className='btn btn-sm btn-primary';
+  const handler=e=>{
+    const nd=e.target.closest('.flow-node');if(!nd)return;
+    const nid=nd.id.replace('nd-','');
+    if(!connFrom){
+      connFrom=nid;nd.style.boxShadow='0 0 0 3px #1d437e';
+      toast('Jetzt Ziel-Knoten klicken','info');
+    }else{
+      if(connFrom!==nid){flowConns.push({f:connFrom,t:nid});saveData();toast('Verbindung erstellt','success');renderFC()}
+      document.querySelectorAll('.flow-node').forEach(n=>n.style.boxShadow='');
+      connFrom=null;b.textContent='Verbinden';b.className='btn btn-sm btn-secondary';
+      $('fCanvas').removeEventListener('click',handler);
+    }
+  };
+  $('fCanvas').addEventListener('click',handler);
 }
 
 // === TASK CRUD ===
@@ -1682,8 +1724,9 @@ function generatePDF(iid){
     doc.setFont(undefined,'normal');
     y+=8;
     if(inv.positionen){
-      doc.text('1',14,y);doc.text(inv.positionen,30,y);doc.text(fc(inv.amt),w-40,y,{align:'right'});
-      y+=8;
+      const posLines=doc.splitTextToSize(inv.positionen,w-90);
+      doc.text('1',14,y);doc.text(posLines,30,y);doc.text(fc(inv.amt),w-40,y,{align:'right'});
+      y+=Math.max(8,posLines.length*5+3);
     }else{
       doc.text('1',14,y);doc.text('Leistungen gemäß Vereinbarung',30,y);doc.text(fc(inv.amt),w-40,y,{align:'right'});
       y+=8;
@@ -1795,10 +1838,11 @@ function pinKey(e,n){
   }
   if(e.key==='Enter')verifyPin();
 }
-function verifyPin(){
+async function verifyPin(){
   const pin=[1,2,3,4].map(i=>document.getElementById('pin'+i).value).join('');
   if(pin.length<4){document.getElementById('pinError').textContent='Bitte 4-stelligen PIN eingeben';return}
-  if(pin===APP_PIN){
+  const pinHash=await hashPin(pin);
+  if(pinHash===APP_PIN_HASH){
     document.getElementById('pinScreen').style.display='none';
     initApp();
   }else{
@@ -1807,6 +1851,17 @@ function verifyPin(){
     document.getElementById('pin1').focus();
     setTimeout(()=>[1,2,3,4].forEach(i=>document.getElementById('pin'+i).style.borderColor='#E8E8ED'),1500);
   }
+}
+
+// === LOGOUT ===
+function logout(){
+  document.getElementById('pinScreen').style.display='flex';
+  [1,2,3,4].forEach(i=>{document.getElementById('pin'+i).value=''});
+  document.getElementById('pin1').focus();
+  document.getElementById('pinError').textContent='';
+  // Close any open panels
+  closeDetail();closeTF();
+  document.querySelector('.sidebar').classList.remove('mobile-open');
 }
 
 // === INIT ===
