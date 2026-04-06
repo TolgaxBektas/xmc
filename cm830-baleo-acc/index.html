@@ -199,7 +199,7 @@
         <header>
             <div class="logo">xMC</div>
             <h1>Invoice Overview</h1>
-            <div class="subtitle">Invoice tracking & payment monitoring â xMasterCenter</div>
+            <div class="subtitle">Invoice tracking & payment monitoring — xMasterCenter</div>
             <div class="company-badge" id="companyBadge"></div>
             <br>
             <div class="client-info" id="clientInfo"></div>
@@ -236,7 +236,7 @@
 
     <script>
     /* ============================================================
-       CONFIGURATION â Edit this section to set up a new portal.
+       CONFIGURATION — Edit this section to set up a new portal.
        Only this CONFIG block needs to change per company/client.
        ============================================================ */
     const CONFIG = {
@@ -249,7 +249,7 @@
         // Document path (relative to this HTML file)
         docsPath: 'docs/',
 
-        // Invoices â add, remove or update entries as needed
+        // Invoices — add, remove or update entries as needed
         // status: 'pending' | 'received'
         invoices: [
             { id:'BA060058', inv:'BA 060/058', amount:3425.25,  ref:'Feb 2026',         status:'pending', pdf:'BA060058.pdf' },
@@ -263,7 +263,7 @@
         ],
     };
     /* ============================================================
-       END CONFIGURATION â No changes needed below this line.
+       END CONFIGURATION — No changes needed below this line.
        ============================================================ */
 
     function fmt(n) {
@@ -276,7 +276,7 @@
         // Header
         document.getElementById('companyBadge').textContent = CONFIG.company;
         document.getElementById('clientInfo').textContent = 'Client: ' + CONFIG.client;
-        document.getElementById('sectionTitle').textContent = 'Invoices â ' + CONFIG.company;
+        document.getElementById('sectionTitle').textContent = 'Invoices — ' + CONFIG.company;
         document.title = 'xMasterCenter | Invoice Overview';
 
         // Invoice list
