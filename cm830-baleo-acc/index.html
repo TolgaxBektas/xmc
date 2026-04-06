@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>xMasterCenter | Invoice Overview</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --navy: #1a1a2e;
+            --accent: #4f8cff;
+            --light-navy: #2a2a3e;
+            --text: #f5f5f5;
+            --muted: #b0b0b0;
+            --border: #3a3a4e;
+            --success: #4caf50;
+            --teal: #50C0D0;
+            --warning: #ff9800;
+            --pending: #ff9800;
+            --received: #4caf50;
+        }
+        html, body { height: 100%; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, var(--navy) 0%, var(--light-navy) 100%);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        .container { max-width: 920px; margin: 0 auto; padding: 20px; }
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 25px;
+            border-bottom: 2px solid var(--border);
+        }
+        .logo {
+            display: inline-flex;
+            width: 56px; height: 56px;
+            background: linear-gradient(135deg, var(--accent), #357abd);
+            border-radius: 8px;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 22px;
+            margin-bottom: 12px;
+            color: white;
+        }
+        h1 { font-size: 28px; margin-bottom: 6px; font-weight: 600; }
+        .subtitle { color: var(--muted); font-size: 13px; }
+        .company-badge {
+            display: inline-block;
+            background: rgba(80,192,208,0.15);
+            border: 1px solid rgba(80,192,208,0.3);
+            border-radius: 6px;
+            padding: 6px 16px;
+            margin-top: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--teal);
+        }
+        .client-info {
+            display: inline-block;
+            background: rgba(79,140,255,0.1);
+            border: 1px solid rgba(79,140,255,0.2);
+            border-radius: 6px;
+            padding: 4px 12px;
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .section {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .section-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .company-icon {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            background: var(--teal);
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .summary-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+        }
+        .summary-card .card-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .summary-card .card-value { font-size: 20px; font-weight: 700; margin-top: 4px; }
+        .summary-card .card-value.pending-val { color: var(--pending); }
+        .summary-card .card-value.received-val { color: var(--received); }
+        .invoice-item {
+            display: grid;
+            grid-template-columns: 1fr auto auto auto;
+            align-items: center;
+            gap: 12px;
+            padding: 14px;
+            border-radius: 8px;
+            margin-bottom: 6px;
+            border: 1px solid transparent;
+            transition: all 0.15s;
+        }
+        .invoice-item:hover { background: rgba(255,255,255,0.04); }
+        .inv-id { font-weight: 600; font-size: 14px; }
+        .inv-meta { color: var(--muted); font-size: 12px; margin-top: 2px; }
+        .inv-amount { font-weight: 600; font-size: 14px; text-align: right; white-space: nowrap; }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .status-pending {
+            background: rgba(255,152,0,0.12);
+            color: var(--pending);
+            border: 1px solid rgba(255,152,0,0.25);
+        }
+        .status-received {
+            background: rgba(76,175,80,0.12);
+            color: var(--received);
+            border: 1px solid rgba(76,175,80,0.25);
+        }
+        .status-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+        }
+        .status-pending .status-dot { background: var(--pending); }
+        .status-received .status-dot { background: var(--received); }
+        .btn-download {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 12px;
+            background: rgba(79,140,255,0.12);
+            border: 1px solid rgba(79,140,255,0.25);
+            border-radius: 6px;
+            color: var(--accent);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+        .btn-download:hover { background: rgba(79,140,255,0.2); color: white; }
+        .btn-download svg { width: 14px; height: 14px; }
+        .subtotal-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 14px;
+            margin-top: 6px;
+            border-top: 1px solid var(--border);
+            font-size: 13px;
+            color: var(--muted);
+        }
+        .subtotal-row strong { color: var(--text); }
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--muted);
+            font-size: 11px;
+            border-top: 1px solid var(--border);
+            margin-top: 20px;
+        }
+        @media (max-width: 700px) {
+            .invoice-item { grid-template-columns: 1fr auto; gap: 8px; }
+            .invoice-item .status-badge { grid-column: 1 / -1; justify-self: start; }
+            .invoice-item .btn-download { grid-column: 1 / -1; justify-self: start; }
+            .summary-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">xMC</div>
+            <h1>Invoice Overview</h1>
+            <div class="subtitle">Invoice tracking & payment monitoring â xMasterCenter</div>
+            <div class="company-badge" id="companyBadge"></div>
+            <br>
+            <div class="client-info" id="clientInfo"></div>
+        </header>
+
+        <div class="summary-grid">
+            <div class="summary-card">
+                <div class="card-label">Total Invoiced</div>
+                <div class="card-value" id="totalInvoiced">EUR 0.00</div>
+            </div>
+            <div class="summary-card">
+                <div class="card-label">Payments Received</div>
+                <div class="card-value received-val" id="totalReceived">EUR 0.00</div>
+            </div>
+            <div class="summary-card">
+                <div class="card-label">Pending</div>
+                <div class="card-value pending-val" id="totalPending">EUR 0.00</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title"><span class="company-icon"></span> <span id="sectionTitle"></span></div>
+            <div id="invoiceList"></div>
+            <div class="subtotal-row">
+                <span>Total</span>
+                <strong id="invoiceSubtotal">EUR 0.00</strong>
+            </div>
+        </div>
+
+        <footer>
+            Powered by xMasterCenter &middot; Ilexis Medya Ltd. Sti. &middot; &copy; 2026
+        </footer>
+    </div>
+
+    <script>
+    /* ============================================================
+       CONFIGURATION â Edit this section to set up a new portal.
+       Only this CONFIG block needs to change per company/client.
+       ============================================================ */
+    const CONFIG = {
+        // Portal identity
+        portalType: 'receiver',            // 'receiver' = invoice issuer view
+        company: 'Baleo Services DOOEL',   // The invoicing company (recipient of payments)
+        client: 'Conrad Media LTD',        // The paying client
+        currency: 'EUR',
+
+        // Document path (relative to this HTML file)
+        docsPath: 'docs/',
+
+        // Invoices â add, remove or update entries as needed
+        // status: 'pending' | 'received'
+        invoices: [
+            { id:'BA060058', inv:'BA 060/058', amount:3425.25,  ref:'Feb 2026',         status:'pending', pdf:'BA060058.pdf' },
+            { id:'BA060059', inv:'BA 060/059', amount:1465.82,  ref:'Dec 2025',         status:'pending', pdf:'BA060059.pdf' },
+            { id:'BA060063', inv:'BA 060/063', amount:7390.30,  ref:'Apr+Jul+Aug 2025', status:'pending', pdf:'BA060063.pdf' },
+            { id:'BA060064', inv:'BA 060/064', amount:8115.30,  ref:'Sep-Nov 2025',     status:'pending', pdf:'BA060064.pdf' },
+            { id:'BA060065', inv:'BA 060/065', amount:13303.65, ref:'Jul 2025',         status:'pending', pdf:'BA060065.pdf' },
+            { id:'BA060066', inv:'BA 060/066', amount:8756.25,  ref:'Sep 2025',         status:'pending', pdf:'BA060066.pdf' },
+            { id:'BA060067', inv:'BA 060/067', amount:13308.18, ref:'Sep 2025',         status:'pending', pdf:'BA060067.pdf' },
+            { id:'BA060068', inv:'BA 060/068', amount:7913.25,  ref:'Oct 2025',         status:'pending', pdf:'BA060068.pdf' },
+        ],
+    };
+    /* ============================================================
+       END CONFIGURATION â No changes needed below this line.
+       ============================================================ */
+
+    function fmt(n) {
+        return CONFIG.currency + ' ' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+    }
+
+    const downloadIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
+
+    function render() {
+        // Header
+        document.getElementById('companyBadge').textContent = CONFIG.company;
+        document.getElementById('clientInfo').textContent = 'Client: ' + CONFIG.client;
+        document.getElementById('sectionTitle').textContent = 'Invoices â ' + CONFIG.company;
+        document.title = 'xMasterCenter | Invoice Overview';
+
+        // Invoice list
+        const list = document.getElementById('invoiceList');
+        list.innerHTML = CONFIG.invoices.map(i => {
+            const statusClass = i.status === 'received' ? 'status-received' : 'status-pending';
+            const statusText  = i.status === 'received' ? 'Received' : 'Pending';
+            const pdfHref = CONFIG.docsPath + i.pdf;
+            return `
+            <div class="invoice-item">
+                <div>
+                    <div class="inv-id">${i.inv}</div>
+                    <div class="inv-meta">Ref: ${i.ref}</div>
+                </div>
+                <div class="inv-amount">${fmt(i.amount)}</div>
+                <div class="status-badge ${statusClass}"><span class="status-dot"></span>${statusText}</div>
+                <a class="btn-download" href="${pdfHref}" target="_blank" title="Download ${i.inv}">${downloadIcon} PDF</a>
+            </div>`;
+        }).join('');
+
+        // Totals
+        const total    = CONFIG.invoices.reduce((s,i) => s + i.amount, 0);
+        const received = CONFIG.invoices.filter(i => i.status === 'received').reduce((s,i) => s + i.amount, 0);
+        const pending  = total - received;
+
+        document.getElementById('invoiceSubtotal').textContent = fmt(total);
+        document.getElementById('totalInvoiced').textContent   = fmt(total);
+        document.getElementById('totalReceived').textContent   = fmt(received);
+        document.getElementById('totalPending').textContent    = fmt(pending);
+    }
+
+    render();
+    </script>
+</body>
+</html>
