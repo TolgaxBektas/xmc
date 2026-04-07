@@ -27,7 +27,34 @@
             line-height: 1.6;
             min-height: 100vh;
         }
-        .container { max-width: 920px; margin: 0 auto; padding: 20px; }
+        .container { max-width: 920px; margin: 0 auto; padding: 20px; position: relative; }
+        .lang-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: inline-flex;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            overflow: hidden;
+            z-index: 10;
+        }
+        .lang-toggle button {
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+            transition: all 0.15s;
+        }
+        .lang-toggle button.active {
+            background: var(--accent);
+            color: white;
+        }
+        .lang-toggle button:not(.active):hover { color: var(--text); background: rgba(255,255,255,0.04); }
         header {
             text-align: center;
             margin-bottom: 30px;
@@ -187,6 +214,7 @@
             margin-top: 20px;
         }
         @media (max-width: 700px) {
+            .lang-toggle { top: 10px; right: 10px; }
             .invoice-item { grid-template-columns: 1fr auto; gap: 8px; }
             .invoice-item .status-badge { grid-column: 1 / -1; justify-self: start; }
             .invoice-item .btn-download { grid-column: 1 / -1; justify-self: start; }
@@ -196,10 +224,14 @@
 </head>
 <body>
     <div class="container">
+        <div class="lang-toggle" id="langToggle">
+            <button data-lang="en" class="active">EN</button>
+            <button data-lang="de">DE</button>
+        </div>
         <header>
             <div class="logo">xMC</div>
-            <h1>Invoice Overview</h1>
-            <div class="subtitle">Invoice tracking & payment monitoring — xMasterCenter</div>
+            <h1 id="pageTitle">Invoice Overview</h1>
+            <div class="subtitle" id="pageSubtitle">Invoice tracking &amp; payment monitoring — xMasterCenter</div>
             <div class="company-badge" id="companyBadge"></div>
             <br>
             <div class="client-info" id="clientInfo"></div>
@@ -207,15 +239,15 @@
 
         <div class="summary-grid">
             <div class="summary-card">
-                <div class="card-label">Total Invoiced</div>
+                <div class="card-label" id="labelTotalInvoiced">Total Invoiced</div>
                 <div class="card-value" id="totalInvoiced">EUR 0.00</div>
             </div>
             <div class="summary-card">
-                <div class="card-label">Payments Received</div>
+                <div class="card-label" id="labelPaymentsReceived">Payments Received</div>
                 <div class="card-value received-val" id="totalReceived">EUR 0.00</div>
             </div>
             <div class="summary-card">
-                <div class="card-label">Pending</div>
+                <div class="card-label" id="labelPending">Pending</div>
                 <div class="card-value pending-val" id="totalPending">EUR 0.00</div>
             </div>
         </div>
@@ -224,7 +256,7 @@
             <div class="section-title"><span class="company-icon"></span> <span id="sectionTitle"></span></div>
             <div id="invoiceList"></div>
             <div class="subtotal-row">
-                <span>Total</span>
+                <span id="labelTotal">Total</span>
                 <strong id="invoiceSubtotal">EUR 0.00</strong>
             </div>
         </div>
@@ -240,17 +272,12 @@
        Only this CONFIG block needs to change per company/client.
        ============================================================ */
     const CONFIG = {
-        // Portal identity
-        portalType: 'receiver',              // 'receiver' = invoice issuer view
-        company: 'Nordlink Media DOOEL',     // The invoicing company (recipient of payments)
-        client: 'Conrad Media LTD',          // The paying client
+        portalType: 'receiver',
+        company: 'Nordlink Media DOOEL',
+        client: 'Conrad Media LTD',
         currency: 'EUR',
-
-        // Document path (relative to this HTML file)
         docsPath: 'docs/',
-
-        // Invoices — add, remove or update entries as needed
-        // status: 'pending' | 'received'
+        defaultLang: 'en',
         invoices: [
             { id:'ND260011', inv:'ND26-0011', amount:17838.00, ref:'CPM-KW20/2025', status:'pending', pdf:'ND26-0011.pdf' },
             { id:'ND260012', inv:'ND26-0012', amount:11575.20, ref:'CPM-KW24/2025', status:'pending', pdf:'ND26-0012.pdf' },
@@ -263,34 +290,81 @@
        END CONFIGURATION — No changes needed below this line.
        ============================================================ */
 
+    const I18N = {
+        en: {
+            pageTitle:        'Invoice Overview',
+            pageSubtitle:     'Invoice tracking & payment monitoring — xMasterCenter',
+            clientPrefix:     'Client: ',
+            sectionPrefix:    'Invoices — ',
+            totalInvoiced:    'Total Invoiced',
+            paymentsReceived: 'Payments Received',
+            pending:          'Pending',
+            total:            'Total',
+            statusPending:    'Pending',
+            statusReceived:   'Received',
+            downloadTitle:    'Download',
+            locale:           'en-US',
+            docTitle:         'xMasterCenter | Invoice Overview',
+        },
+        de: {
+            pageTitle:        'Rechnungsübersicht',
+            pageSubtitle:     'Rechnungsverfolgung & Zahlungsüberwachung — xMasterCenter',
+            clientPrefix:     'Kunde: ',
+            sectionPrefix:    'Rechnungen — ',
+            totalInvoiced:    'Gesamt fakturiert',
+            paymentsReceived: 'Zahlungen erhalten',
+            pending:          'Ausstehend',
+            total:            'Gesamt',
+            statusPending:    'Ausstehend',
+            statusReceived:   'Erhalten',
+            downloadTitle:    'Herunterladen',
+            locale:           'de-DE',
+            docTitle:         'xMasterCenter | Rechnungsübersicht',
+        },
+    };
+
+    let currentLang = CONFIG.defaultLang || 'en';
+
+    function t() { return I18N[currentLang]; }
+
     function fmt(n) {
-        return CONFIG.currency + ' ' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+        return CONFIG.currency + ' ' + n.toLocaleString(t().locale, {minimumFractionDigits:2, maximumFractionDigits:2});
     }
 
     const downloadIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
 
     function render() {
-        // Header
+        const L = t();
+
+        // Header / labels
+        document.documentElement.lang = currentLang;
+        document.title = L.docTitle;
+        document.getElementById('pageTitle').textContent = L.pageTitle;
+        document.getElementById('pageSubtitle').textContent = L.pageSubtitle;
         document.getElementById('companyBadge').textContent = CONFIG.company;
-        document.getElementById('clientInfo').textContent = 'Client: ' + CONFIG.client;
-        document.getElementById('sectionTitle').textContent = 'Invoices — ' + CONFIG.company;
-        document.title = 'xMasterCenter | Invoice Overview';
+        document.getElementById('clientInfo').textContent = L.clientPrefix + CONFIG.client;
+        document.getElementById('sectionTitle').textContent = L.sectionPrefix + CONFIG.company;
+        document.getElementById('labelTotalInvoiced').textContent = L.totalInvoiced;
+        document.getElementById('labelPaymentsReceived').textContent = L.paymentsReceived;
+        document.getElementById('labelPending').textContent = L.pending;
+        document.getElementById('labelTotal').textContent = L.total;
 
         // Invoice list
         const list = document.getElementById('invoiceList');
         list.innerHTML = CONFIG.invoices.map(i => {
             const statusClass = i.status === 'received' ? 'status-received' : 'status-pending';
-            const statusText  = i.status === 'received' ? 'Received' : 'Pending';
+            const statusText  = i.status === 'received' ? L.statusReceived : L.statusPending;
             const pdfHref = CONFIG.docsPath + i.pdf;
+            const refLabel = currentLang === 'de' ? 'Ref.: ' : 'Ref: ';
             return `
             <div class="invoice-item">
                 <div>
                     <div class="inv-id">${i.inv}</div>
-                    <div class="inv-meta">Ref: ${i.ref}</div>
+                    <div class="inv-meta">${refLabel}${i.ref}</div>
                 </div>
                 <div class="inv-amount">${fmt(i.amount)}</div>
                 <div class="status-badge ${statusClass}"><span class="status-dot"></span>${statusText}</div>
-                <a class="btn-download" href="${pdfHref}" target="_blank" title="Download ${i.inv}">${downloadIcon} PDF</a>
+                <a class="btn-download" href="${pdfHref}" target="_blank" title="${L.downloadTitle} ${i.inv}">${downloadIcon} PDF</a>
             </div>`;
         }).join('');
 
@@ -303,7 +377,19 @@
         document.getElementById('totalInvoiced').textContent   = fmt(total);
         document.getElementById('totalReceived').textContent   = fmt(received);
         document.getElementById('totalPending').textContent    = fmt(pending);
+
+        // Toggle active state
+        document.querySelectorAll('#langToggle button').forEach(b => {
+            b.classList.toggle('active', b.dataset.lang === currentLang);
+        });
     }
+
+    document.getElementById('langToggle').addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-lang]');
+        if (!btn) return;
+        currentLang = btn.dataset.lang;
+        render();
+    });
 
     render();
     </script>
