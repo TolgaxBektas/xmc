@@ -195,6 +195,24 @@
         }
         .btn-download:hover { background: rgba(79,140,255,0.2); color: white; }
         .btn-download svg { width: 14px; height: 14px; }
+        .inv-actions { display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+        .btn-confirm {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 12px;
+            background: rgba(76,175,80,0.12);
+            border: 1px solid rgba(76,175,80,0.25);
+            border-radius: 6px;
+            color: var(--received);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+        .btn-confirm:hover { background: rgba(76,175,80,0.22); color: white; }
+        .btn-confirm svg { width: 14px; height: 14px; }
         .subtotal-row {
             display: flex;
             justify-content: space-between;
@@ -278,6 +296,8 @@
         currency: 'EUR',
         docsPath: 'docs/',
         defaultLang: 'en',
+        confirmEmail: 'tolga.bektas@ilexis.com.tr',
+        statusUrl: 'status.json',
         invoices: [
             { id:'BA060058', inv:'BA 060/058', amount:3425.25,  ref:'Feb 2026',         status:'pending', pdf:'BA060058.pdf' },
             { id:'BA060059', inv:'BA 060/059', amount:1465.82,  ref:'Dec 2025',         status:'pending', pdf:'BA060059.pdf' },
@@ -306,6 +326,9 @@
             statusPending:    'Pending',
             statusReceived:   'Received',
             downloadTitle:    'Download',
+            markPaid:         'Mark as Paid',
+            emailSubject:     'Payment Confirmation — ',
+            emailBody:        'Dear Ilexis Medya Ltd.,\n\nI hereby confirm that the following invoice has been paid:\n\nInvoice: {inv}\nAmount: {amount}\nReference: {ref}\nIssuer: {company}\n\nPayment details:\n- Payment date: \n- Transaction reference: \n- Sender bank / IBAN: \n- Notes: \n\nKind regards,\n',
             locale:           'en-US',
             docTitle:         'xMasterCenter | Invoice Overview',
         },
@@ -321,6 +344,9 @@
             statusPending:    'Ausstehend',
             statusReceived:   'Erhalten',
             downloadTitle:    'Herunterladen',
+            markPaid:         'Als bezahlt markieren',
+            emailSubject:     'Zahlungsbestätigung — ',
+            emailBody:        'Sehr geehrte Damen und Herren,\n\nhiermit bestätige ich, dass die folgende Rechnung bezahlt wurde:\n\nRechnung: {inv}\nBetrag: {amount}\nReferenz: {ref}\nAussteller: {company}\n\nZahlungsdetails:\n- Zahlungsdatum: \n- Transaktionsreferenz: \n- Absenderbank / IBAN: \n- Anmerkungen: \n\nMit freundlichen Grüßen,\n',
             locale:           'de-DE',
             docTitle:         'xMasterCenter | Rechnungsübersicht',
         },
@@ -335,6 +361,17 @@
     }
 
     const downloadIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
+    const checkIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+
+    function buildMailto(i, L) {
+        const subject = L.emailSubject + i.inv;
+        const body = L.emailBody
+            .replace('{inv}', i.inv)
+            .replace('{amount}', fmt(i.amount))
+            .replace('{ref}', i.ref)
+            .replace('{company}', CONFIG.company);
+        return 'mailto:' + CONFIG.confirmEmail + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+    }
 
     function render() {
         const L = t();
@@ -359,6 +396,9 @@
             const statusText  = i.status === 'received' ? L.statusReceived : L.statusPending;
             const pdfHref = CONFIG.docsPath + i.pdf;
             const refLabel = currentLang === 'de' ? 'Ref.: ' : 'Ref: ';
+            const confirmBtn = i.status === 'pending'
+                ? `<a class="btn-confirm" href="${buildMailto(i, L)}" title="${L.markPaid} ${i.inv}">${checkIcon} ${L.markPaid}</a>`
+                : '';
             return `
             <div class="invoice-item">
                 <div>
@@ -367,7 +407,10 @@
                 </div>
                 <div class="inv-amount">${fmt(i.amount)}</div>
                 <div class="status-badge ${statusClass}"><span class="status-dot"></span>${statusText}</div>
-                <a class="btn-download" href="${pdfHref}" target="_blank" title="${L.downloadTitle} ${i.inv}">${downloadIcon} PDF</a>
+                <div class="inv-actions">
+                    <a class="btn-download" href="${pdfHref}" target="_blank" title="${L.downloadTitle} ${i.inv}">${downloadIcon} PDF</a>
+                    ${confirmBtn}
+                </div>
             </div>`;
         }).join('');
 
@@ -394,7 +437,22 @@
         render();
     });
 
-    render();
+    async function init() {
+        if (CONFIG.statusUrl) {
+            try {
+                const resp = await fetch(CONFIG.statusUrl + '?t=' + Date.now(), {cache: 'no-store'});
+                if (resp.ok) {
+                    const map = await resp.json();
+                    CONFIG.invoices.forEach(i => {
+                        if (map && map[i.id]) i.status = map[i.id];
+                    });
+                }
+            } catch (e) { /* status.json optional — silent fallback */ }
+        }
+        render();
+    }
+
+    init();
     </script>
 </body>
 </html>
