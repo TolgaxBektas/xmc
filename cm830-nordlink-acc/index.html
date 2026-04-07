@@ -299,11 +299,11 @@
         confirmEmail: 'tolga.bektas@ilexis.com.tr',
         statusUrl: 'status.json',
         invoices: [
-            { id:'ND260011', inv:'ND26-0011', amount:17838.00, ref:'CPM-KW20/2025', status:'pending', pdf:'ND26-0011.pdf' },
-            { id:'ND260012', inv:'ND26-0012', amount:11575.20, ref:'CPM-KW24/2025', status:'pending', pdf:'ND26-0012.pdf' },
-            { id:'ND260013', inv:'ND26-0013', amount:10472.80, ref:'CPM-KW25/2025', status:'pending', pdf:'ND26-0013.pdf' },
-            { id:'ND260014', inv:'ND26-0014', amount:11024.00, ref:'CPM-KW26/2025', status:'pending', pdf:'ND26-0014.pdf' },
-            { id:'ND260015', inv:'ND26-0015', amount:8268.00,  ref:'CPM-KW27/2025', status:'pending', pdf:'ND26-0015.pdf' },
+            { id:'ND260011', inv:'ND26-0011', amount:17838.00, ref:{en:'CPM-CW20/2025', de:'CPM-KW20/2025'}, status:'pending', pdf:'ND26-0011.pdf' },
+            { id:'ND260012', inv:'ND26-0012', amount:11575.20, ref:{en:'CPM-CW24/2025', de:'CPM-KW24/2025'}, status:'pending', pdf:'ND26-0012.pdf' },
+            { id:'ND260013', inv:'ND26-0013', amount:10472.80, ref:{en:'CPM-CW25/2025', de:'CPM-KW25/2025'}, status:'pending', pdf:'ND26-0013.pdf' },
+            { id:'ND260014', inv:'ND26-0014', amount:11024.00, ref:{en:'CPM-CW26/2025', de:'CPM-KW26/2025'}, status:'pending', pdf:'ND26-0014.pdf' },
+            { id:'ND260015', inv:'ND26-0015', amount:8268.00,  ref:{en:'CPM-CW27/2025', de:'CPM-KW27/2025'}, status:'pending', pdf:'ND26-0015.pdf' },
         ],
     };
     /* ============================================================
@@ -360,12 +360,16 @@
     const downloadIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
     const checkIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 
+    function resolveRef(i) {
+        return (i.ref && typeof i.ref === 'object') ? (i.ref[currentLang] || i.ref.en || '') : (i.ref || '');
+    }
+
     function buildMailto(i, L) {
         const subject = L.emailSubject + i.inv;
         const body = L.emailBody
             .replace('{inv}', i.inv)
             .replace('{amount}', fmt(i.amount))
-            .replace('{ref}', i.ref)
+            .replace('{ref}', resolveRef(i))
             .replace('{company}', CONFIG.company);
         return 'mailto:' + CONFIG.confirmEmail + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
     }
@@ -392,6 +396,7 @@
             const statusClass = i.status === 'received' ? 'status-received' : 'status-pending';
             const statusText  = i.status === 'received' ? L.statusReceived : L.statusPending;
             const pdfHref = CONFIG.docsPath + i.pdf;
+            const refText = resolveRef(i);
             const refLabel = currentLang === 'de' ? 'Ref.: ' : 'Ref: ';
             const confirmBtn = i.status === 'pending'
                 ? `<a class="btn-confirm" href="${buildMailto(i, L)}" title="${L.markPaid} ${i.inv}">${checkIcon} ${L.markPaid}</a>`
@@ -400,7 +405,7 @@
             <div class="invoice-item">
                 <div>
                     <div class="inv-id">${i.inv}</div>
-                    <div class="inv-meta">${refLabel}${i.ref}</div>
+                    <div class="inv-meta">${refLabel}${refText}</div>
                 </div>
                 <div class="inv-amount">${fmt(i.amount)}</div>
                 <div class="status-badge ${statusClass}"><span class="status-dot"></span>${statusText}</div>
