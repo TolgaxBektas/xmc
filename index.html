@@ -229,19 +229,30 @@ svg.flow-svg{position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;poi
 <body>
 <div class="toast-container" id="toastContainer"></div>
 
-<!-- PIN LOGIN SCREEN -->
-<div id="pinScreen" style="position:fixed;inset:0;background:linear-gradient(135deg,#1d437e 0%,#00A8A8 100%);display:flex;align-items:center;justify-content:center;z-index:9999">
-  <div style="background:white;border-radius:16px;padding:48px 40px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;max-width:380px;width:90%">
-    <span class="xlogo xlogo-lg" style="margin-bottom:8px;display:inline-flex"><span class="x">x</span><span class="upper">MASTER</span><span class="lower">center</span></span>
-    <p style="color:#86868B;font-size:13px;margin:12px 0 28px">Bitte PIN eingeben</p>
-    <div style="display:flex;gap:10px;justify-content:center;margin-bottom:20px">
-      <input type="password" id="pin1" maxlength="1" style="width:52px;height:60px;text-align:center;font-size:24px;font-weight:700;border:2px solid #E8E8ED;border-radius:12px;outline:none" oninput="pinNext(1)" onkeydown="pinKey(event,1)" autofocus>
-      <input type="password" id="pin2" maxlength="1" style="width:52px;height:60px;text-align:center;font-size:24px;font-weight:700;border:2px solid #E8E8ED;border-radius:12px;outline:none" oninput="pinNext(2)" onkeydown="pinKey(event,2)">
-      <input type="password" id="pin3" maxlength="1" style="width:52px;height:60px;text-align:center;font-size:24px;font-weight:700;border:2px solid #E8E8ED;border-radius:12px;outline:none" oninput="pinNext(3)" onkeydown="pinKey(event,3)">
-      <input type="password" id="pin4" maxlength="1" style="width:52px;height:60px;text-align:center;font-size:24px;font-weight:700;border:2px solid #E8E8ED;border-radius:12px;outline:none" oninput="pinNext(4)" onkeydown="pinKey(event,4)">
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" style="position:fixed;inset:0;background:linear-gradient(135deg,#1d437e 0%,#00A8A8 100%);display:flex;align-items:center;justify-content:center;z-index:9999">
+  <div style="background:white;border-radius:16px;padding:40px 40px 32px;box-shadow:0 20px 60px rgba(0,0,0,.3);max-width:400px;width:90%">
+    <div style="text-align:center;margin-bottom:24px">
+      <span class="xlogo xlogo-lg" style="display:inline-flex"><span class="x">x</span><span class="upper">MASTER</span><span class="lower">center</span></span>
+      <p style="color:#86868B;font-size:13px;margin-top:10px">Bitte anmelden, um fortzufahren</p>
     </div>
-    <div id="pinError" style="color:#dc2626;font-size:13px;min-height:20px;margin-bottom:12px"></div>
-    <button onclick="verifyPin()" style="width:100%;padding:12px;background:#1d437e;color:white;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer">Anmelden</button>
+    <form id="loginForm" onsubmit="event.preventDefault();doLogin()" autocomplete="on">
+      <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px">E-Mail</label>
+      <input type="email" id="loginEmail" autocomplete="username" required value="tolga.bektas@ilexis.com.tr" style="width:100%;padding:11px 12px;font-size:14px;border:2px solid #E8E8ED;border-radius:10px;outline:none;margin-bottom:14px" oninput="clearLoginError()">
+      <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px">Passwort</label>
+      <div style="position:relative;margin-bottom:12px">
+        <input type="password" id="loginPassword" autocomplete="current-password" required style="width:100%;padding:11px 40px 11px 12px;font-size:14px;border:2px solid #E8E8ED;border-radius:10px;outline:none" oninput="clearLoginError()" autofocus>
+        <button type="button" onclick="toggleLoginPw()" aria-label="Passwort anzeigen" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#86868B;padding:4px;display:flex;align-items:center">
+          <svg id="loginPwIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#374151;margin-bottom:18px;cursor:pointer;user-select:none">
+        <input type="checkbox" id="loginRemember" checked style="width:16px;height:16px;cursor:pointer">
+        Angemeldet bleiben
+      </label>
+      <div id="loginError" style="color:#dc2626;font-size:13px;min-height:20px;margin-bottom:10px"></div>
+      <button type="submit" style="width:100%;padding:12px;background:#1d437e;color:white;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer">Anmelden</button>
+    </form>
   </div>
 </div>
 
@@ -260,8 +271,11 @@ svg.flow-svg{position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;poi
   <div class="user-panel">
     <div style="text-align:center;padding:4px 12px 8px;font-size:11px" id="syncBadge"><span style="color:#86868B">— Offline —</span></div>
     <div class="user-info">
-      <div class="user-avatar">TB</div>
-      <div><div class="user-name">Tolga Bektas</div><div class="user-email">tolga.bektas@ilexis.com.tr</div></div>
+      <div class="user-avatar" id="userAvatar">TB</div>
+      <div style="flex:1;min-width:0"><div class="user-name" id="userName">Tolga Bektas</div><div class="user-email" id="userEmail">tolga.bektas@ilexis.com.tr</div></div>
+      <button onclick="doLogout()" title="Abmelden" aria-label="Abmelden" style="background:none;border:none;cursor:pointer;color:#86868B;padding:6px;border-radius:6px;display:flex;align-items:center" onmouseover="this.style.background='#F5F5F7';this.style.color='#dc2626'" onmouseout="this.style.background='none';this.style.color='#86868B'">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
     </div>
   </div>
 </aside>
@@ -288,7 +302,11 @@ function xlogo(name,size){
 }
 
 // === CONFIG ===
-const APP_PIN='1907';
+const APP_USERS=[
+  {email:'tolga.bektas@ilexis.com.tr',password:'1907',name:'Tolga Bektas',initials:'TB'}
+];
+const SESSION_KEY='xMasterCenter_session';
+let currentUser=null;
 let syncStatus='local'; // local mode for GitHub Pages
 // App starts on dashboard (Wiedervorlage)
 
@@ -1783,30 +1801,70 @@ function sendEmail(iid){
   toast('E-Mail-Client geöffnet + PDF erstellt','success');
 }
 
-// === PIN LOGIN ===
-function pinNext(n){
-  const v=document.getElementById('pin'+n).value;
-  if(v&&n<4)document.getElementById('pin'+(n+1)).focus();
-  if(n===4&&v)verifyPin();
+// === LOGIN ===
+function clearLoginError(){
+  const el=document.getElementById('loginError');
+  if(el)el.textContent='';
+  ['loginEmail','loginPassword'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.borderColor='#E8E8ED'});
 }
-function pinKey(e,n){
-  if(e.key==='Backspace'&&!document.getElementById('pin'+n).value&&n>1){
-    document.getElementById('pin'+(n-1)).focus();
-  }
-  if(e.key==='Enter')verifyPin();
+function toggleLoginPw(){
+  const inp=document.getElementById('loginPassword');
+  inp.type=inp.type==='password'?'text':'password';
 }
-function verifyPin(){
-  const pin=[1,2,3,4].map(i=>document.getElementById('pin'+i).value).join('');
-  if(pin.length<4){document.getElementById('pinError').textContent='Bitte 4-stelligen PIN eingeben';return}
-  if(pin===APP_PIN){
-    document.getElementById('pinScreen').style.display='none';
-    initApp();
-  }else{
-    document.getElementById('pinError').textContent='Falscher PIN — bitte nochmal versuchen';
-    [1,2,3,4].forEach(i=>{document.getElementById('pin'+i).value='';document.getElementById('pin'+i).style.borderColor='#dc2626'});
-    document.getElementById('pin1').focus();
-    setTimeout(()=>[1,2,3,4].forEach(i=>document.getElementById('pin'+i).style.borderColor='#E8E8ED'),1500);
+function doLogin(){
+  const email=document.getElementById('loginEmail').value.trim().toLowerCase();
+  const pw=document.getElementById('loginPassword').value;
+  const remember=document.getElementById('loginRemember').checked;
+  const err=document.getElementById('loginError');
+  if(!email||!pw){err.textContent='Bitte E-Mail und Passwort eingeben';return}
+  const user=APP_USERS.find(u=>u.email.toLowerCase()===email&&u.password===pw);
+  if(!user){
+    err.textContent='E-Mail oder Passwort ungültig';
+    document.getElementById('loginEmail').style.borderColor='#dc2626';
+    document.getElementById('loginPassword').style.borderColor='#dc2626';
+    document.getElementById('loginPassword').focus();
+    document.getElementById('loginPassword').select();
+    return;
   }
+  startSession(user,remember);
+}
+function startSession(user,remember){
+  currentUser={email:user.email,name:user.name,initials:user.initials};
+  const session={user:currentUser,ts:Date.now()};
+  try{
+    (remember?localStorage:sessionStorage).setItem(SESSION_KEY,JSON.stringify(session));
+    (remember?sessionStorage:localStorage).removeItem(SESSION_KEY);
+  }catch(e){}
+  applyUserToSidebar();
+  document.getElementById('loginScreen').style.display='none';
+  initApp();
+}
+function restoreSession(){
+  try{
+    const raw=sessionStorage.getItem(SESSION_KEY)||localStorage.getItem(SESSION_KEY);
+    if(!raw)return false;
+    const s=JSON.parse(raw);
+    if(!s||!s.user||!s.user.email)return false;
+    const known=APP_USERS.find(u=>u.email.toLowerCase()===s.user.email.toLowerCase());
+    if(!known)return false;
+    currentUser={email:known.email,name:known.name,initials:known.initials};
+    return true;
+  }catch(e){return false}
+}
+function applyUserToSidebar(){
+  if(!currentUser)return;
+  const av=document.getElementById('userAvatar');
+  const nm=document.getElementById('userName');
+  const em=document.getElementById('userEmail');
+  if(av)av.textContent=currentUser.initials;
+  if(nm)nm.textContent=currentUser.name;
+  if(em)em.textContent=currentUser.email;
+}
+function doLogout(){
+  if(!confirm('Wirklich abmelden?'))return;
+  try{localStorage.removeItem(SESSION_KEY);sessionStorage.removeItem(SESSION_KEY)}catch(e){}
+  currentUser=null;
+  location.reload();
 }
 
 // === INIT ===
@@ -1818,8 +1876,14 @@ function initApp(){
   setInterval(checkReminders,60000);
 }
 
-// Starte mit PIN-Screen (App wird erst nach PIN geladen)
-document.getElementById('pin1').focus();
+// Bootstrap: restore session if present, otherwise show login screen
+if(restoreSession()){
+  applyUserToSidebar();
+  document.getElementById('loginScreen').style.display='none';
+  initApp();
+}else{
+  document.getElementById('loginPassword').focus();
+}
 </script>
 </body>
 </html>
