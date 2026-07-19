@@ -169,6 +169,12 @@ svg.flow-svg{position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;poi
 .inv-table th{text-align:left;padding:10px 14px;font-size:12px;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--gray-border);background:var(--gray-light)}
 .inv-table td{padding:10px 14px;font-size:13px;border-bottom:1px solid var(--gray-border)}
 .inv-table tr:hover{background:var(--blue-light);cursor:pointer}
+.card{background:var(--white);border:1px solid var(--gray-border);border-radius:8px;box-shadow:var(--shadow)}
+.pool-card{transition:transform .12s ease, box-shadow .12s ease}
+.pool-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.inv-badge{padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;display:inline-block}
+.inv-badge.inv-OPEN{background:#fff7ed;color:#ea580c}
+.inv-badge.inv-PAID{background:#f0fdf4;color:#16a34a}
 .inv-status{padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600}
 .inv-OPEN{background:#fff7ed;color:#ea580c}.inv-PAID{background:#f0fdf4;color:#16a34a}.inv-OVERDUE{background:#fef2f2;color:#dc2626}.inv-DRAFT{background:#f3f4f6;color:#6b7280}
 .inv-link{color:var(--blue-dark);text-decoration:underline;cursor:pointer;font-size:12px}
@@ -321,7 +327,7 @@ const SEED_INVOICES=[
   {id:'i_ba_pm_060053',num:'BA 060/053',cid:'pm',amt:17729.20,status:'OPEN',date:'2026-03-04',mid:'baleo',taskId:null,positionen:'Sales Commission / Vertriebsprovision\nSeptember 2025 | KW 36–40\n\nBasis: PM Promedia General Payroll Statement 09/2025\n\nPeriod: September 2025\nNumber of Customers: 80\nTotal Volume: 88,646.00 EUR\nCommission Rate: 20%\nCommission Amount: 17,729.20 EUR'}
 ];
 function saveData(){
-  const d={tasks,invoices,flowNodes,flowConns,M:M.map(m=>({...m})),C:C.map(c=>({...c})),invNo,stickyNotes};
+  const d={tasks,invoices,flowNodes,flowConns,M:M.map(m=>({...m})),C:C.map(c=>({...c})),invNo,stickyNotes,pools,batchInvoices,batchNo,poolConfig};
   try{localStorage.setItem(STORE_KEY,JSON.stringify(d))}catch(e){}
 }
 function loadData(){
@@ -352,6 +358,10 @@ function applyData(d){
   if(d.flowConns)flowConns=d.flowConns;
   if(d.invNo)invNo=d.invNo;
   if(d.stickyNotes)stickyNotes=d.stickyNotes;
+  if(d.pools)pools=d.pools;
+  if(d.batchInvoices)batchInvoices=d.batchInvoices;
+  if(d.batchNo)batchNo=d.batchNo;
+  if(d.poolConfig)poolConfig={...DEFAULT_POOL_CONFIG,...d.poolConfig};
   if(d.M)d.M.forEach(sm=>{const m=M.find(x=>x.id===sm.id);if(m){Object.assign(m,sm)}});
   if(d.C)d.C.forEach(sc=>{const c=C.find(x=>x.id===sc.id);if(c){Object.assign(c,sc)}else{C.push(sc)}});
 }
@@ -416,6 +426,23 @@ let stickyNotes=[];
 let flowNodes=[];
 let flowConns=[];
 
+// === POOL / KETTENREAKTION ===
+// Empfänger-Definitionen (Reihenfolge = Anzeige)
+const POOL_RECIPIENTS=[
+  {key:'KZ', name:'Konstanzer',        color:'#E8790C', stage:1},
+  {key:'L',  name:'Baleo (Leo)',       color:'#1a56db', stage:2},
+  {key:'P1', name:'Vermittler (L1)',   color:'#16a34a', stage:3},
+  {key:'P2', name:'Sponsor (L2)',      color:'#0891b2', stage:3},
+  {key:'P3', name:'Regional (L3)',     color:'#7c3aed', stage:3},
+  {key:'H',  name:'House / Reserve',   color:'#6b7280', stage:3}
+];
+// Default-Sätze aus kettenreaktion.pdf (r_kz=5%, r_l=20%, s1/s2/s3/h auf L_out)
+const DEFAULT_POOL_CONFIG={r_kz:0.05, r_l:0.20, s1:0.60, s2:0.25, s3:0.10, h:0.05};
+let poolConfig={...DEFAULT_POOL_CONFIG};
+let pools=[];           // Line-Items pro Empfänger
+let batchInvoices=[];   // Sammelrechnungen
+let batchNo=0;
+
 let cm=M[0], curPage='dashboard', curView='list', dragN=null, dragOff={x:0,y:0}, connFrom=null, fnId=50;
 let accountsOpen=false;
 
@@ -449,7 +476,7 @@ const icons={
 function svgIcon(key,w){return '<svg width="'+(w||20)+'" height="'+(w||20)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+icons[key]+'</svg>'}
 
 function renderNav(){
-  const isAccSub=(curPage==='invoices'||curPage==='customers'||curPage==='correspondence'||curPage==='mandanttasks');
+  const isAccSub=(curPage==='invoices'||curPage==='pools'||curPage==='customers'||curPage==='correspondence'||curPage==='mandanttasks');
   const accActive=isAccSub;
   const accOpen=accountsOpen||isAccSub;
   let h='';
@@ -460,6 +487,7 @@ function renderNav(){
   h+='<a class="nav-item '+(accActive?'active':'')+'" onclick="toggleAccounts()">'+svgIcon('accounts')+xlogo('Accounts','md')+'<svg class="sub-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6,9 12,15 18,9"/></svg></a>';
   h+='<div class="nav-sub">';
   h+='<a class="nav-item '+(curPage==='invoices'?'active':'')+'" onclick="goPage(\'invoices\')">'+svgIcon('accounts',16)+'Rechnungen</a>';
+  h+='<a class="nav-item '+(curPage==='pools'?'active':'')+'" onclick="goPage(\'pools\')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20h20"/><path d="M4 20V10l8-6 8 6v10"/><path d="M9 20v-6h6v6"/></svg>Pools</a>';
   h+='<a class="nav-item '+(curPage==='customers'?'active':'')+'" onclick="goPage(\'customers\')">'+svgIcon('customers',16)+'Kunden</a>';
   h+='<a class="nav-item '+(curPage==='correspondence'?'active':'')+'" onclick="goPage(\'correspondence\')">'+svgIcon('correspondence',16)+'Schriftverkehr</a>';
   h+='<a class="nav-item '+(curPage==='mandanttasks'?'active':'')+'" onclick="goPage(\'mandanttasks\')">'+svgIcon('mandanttasks',16)+'Aufgaben</a>';
@@ -470,7 +498,7 @@ function renderNav(){
 
 function toggleAccounts(){accountsOpen=!accountsOpen;const el=document.getElementById('navAccounts');if(el)el.classList.toggle('open',accountsOpen)}
 
-function goPage(p){curPage=p;if(p==='invoices'||p==='customers'||p==='correspondence'||p==='mandanttasks')accountsOpen=true;closeDetail();renderNav();renderPage()}
+function goPage(p){curPage=p;if(p==='invoices'||p==='pools'||p==='customers'||p==='correspondence'||p==='mandanttasks')accountsOpen=true;closeDetail();renderNav();renderPage()}
 
 // === MANDANT ===
 function renderM(){
@@ -492,6 +520,7 @@ function renderPage(){
   if(curPage==='dashboard'){setPageTitle('ActionCentral',true);renderDashboard()}
   else if(curPage==='leistungsnetz'){setPageTitle('WorkCoordination',true);renderLN()}
   else if(curPage==='invoices'){setPageTitle('Accounts',true);renderInvoices()}
+  else if(curPage==='pools'){setPageTitle('Accounts',true);renderPools()}
   else if(curPage==='customers'){setPageTitle('Accounts',true);renderCustomers()}
   else if(curPage==='correspondence'){setPageTitle('Accounts',true);renderCorrespondence()}
   else if(curPage==='taskmanager'){setPageTitle('TASKmanager',true);renderTaskManager()}
@@ -1782,6 +1811,364 @@ function sendEmail(iid){
   closeTF();
   toast('E-Mail-Client geöffnet + PDF erstellt','success');
 }
+
+// ============================================================
+// === POOL / KETTENREAKTION — Logik + UI                    ===
+// ============================================================
+// Formel (siehe kettenreaktion.pdf):
+//   B = n * p
+//   KZ_cut = B * r_kz              (5%)
+//   KZ_out = B - KZ_cut            (95%)
+//   L_cut  = KZ_out * r_l          (20% davon = 19% von B)
+//   L_out  = KZ_out - L_cut        (76% von B) — Ausschüttungstopf
+//   P1 = L_out * s1  (60% von L_out)
+//   P2 = L_out * s2  (25% von L_out)
+//   P3 = L_out * s3  (10% von L_out)
+//   H  = L_out * h   (5%  von L_out)
+function calcChain(B,cfg){
+  cfg=cfg||poolConfig;
+  const r=x=>Math.round(x*100)/100;
+  const KZ_cut=r(B*cfg.r_kz);
+  const KZ_out=r(B-KZ_cut);
+  const L_cut =r(KZ_out*cfg.r_l);
+  const L_out =r(KZ_out-L_cut);
+  const P1=r(L_out*cfg.s1);
+  const P2=r(L_out*cfg.s2);
+  const P3=r(L_out*cfg.s3);
+  // Rundungsdifferenz landet immer bei H (nie negativ)
+  const H=r(L_out - P1 - P2 - P3);
+  return {B:r(B),KZ:KZ_cut,L:L_cut,P1,P2,P3,H,KZ_out,L_out};
+}
+
+// Kette auslösen: erzeugt 6 Pool-Einträge aus einem Chain-Event
+function triggerChainFromForm(){
+  const n=parseInt($('chN').value)||0;
+  const p=parseFloat($('chP').value)||0;
+  const label=($('chLabel').value||'').trim();
+  const ref=($('chRef').value||'').trim();
+  if(n<=0||p<=0){toast('Bitte Kundenzahl und Betrag > 0 angeben','error');return}
+  const B=n*p;
+  const c=calcChain(B);
+  const now=new Date().toISOString();
+  const dispDate=now.slice(0,10);
+  const eventId='ce'+Date.now();
+  const desc=(label||('Kettenlauf '+n+' × '+fc(p)));
+  const suffix=(ref?' · Ref: '+ref:'');
+  POOL_RECIPIENTS.forEach(rec=>{
+    pools.push({
+      id:'pi'+Date.now()+'_'+rec.key,
+      poolFor:rec.key,
+      eventId,
+      sourceRef:ref,
+      date:dispDate,
+      description:desc+suffix+' · Anteil '+rec.name,
+      amount:c[rec.key],
+      status:'OPEN',
+      batchInvoiceId:null,
+      createdAt:now
+    });
+  });
+  saveData();
+  toast('Kettenlauf angelegt: '+fc(B)+' → 6 Pool-Positionen','success');
+  renderPools();
+}
+
+// Sammelrechnung aus einem Pool erzeugen
+function createBatchFromPool(poolKey){
+  const rec=POOL_RECIPIENTS.find(r=>r.key===poolKey);if(!rec)return;
+  const items=pools.filter(p=>p.poolFor===poolKey&&p.status==='OPEN');
+  if(items.length===0){toast('Pool ist leer','error');return}
+  batchNo++;
+  const num=cm.prefix+' S'+new Date().getFullYear().toString().slice(-2)+'/'+String(batchNo).padStart(3,'0');
+  const total=Math.round(items.reduce((s,x)=>s+x.amount,0)*100)/100;
+  const now=new Date().toISOString();
+  const batch={
+    id:'bi'+Date.now(),
+    num,
+    poolKey,
+    recipientName:rec.name,
+    mid:cm.id,
+    date:now.slice(0,10),
+    amount:total,
+    status:'OPEN',
+    positions:items.map(x=>({date:x.date,desc:x.description,amount:x.amount,poolItemId:x.id})),
+    createdAt:now
+  };
+  batchInvoices.push(batch);
+  items.forEach(x=>{x.status='INVOICED';x.batchInvoiceId=batch.id});
+  saveData();
+  toast('Sammelrechnung '+num+' erstellt ('+fc(total)+' · '+items.length+' Pos.)','success');
+  renderPools();
+}
+
+// PDF für Sammelrechnung (multi-line positions)
+function generateBatchPDF(bid){
+  const b=batchInvoices.find(x=>x.id===bid);if(!b)return;
+  const m=M.find(x=>x.id===b.mid)||cm;
+  const bv=m.briefvorlage||{};
+  try{
+    const{jsPDF}=window.jspdf;
+    const doc=new jsPDF();
+    const w=doc.internal.pageSize.getWidth();
+    // Header
+    doc.setFontSize(10);doc.setTextColor(100);
+    doc.text(bv.firma||m.name,14,20);
+    if(bv.strasse)doc.text(bv.strasse,14,25);
+    doc.text((bv.plz||'')+' '+(bv.ort||''),14,30);
+    doc.text(bv.land||'',14,35);
+    // Recipient (Pool-Empfänger)
+    doc.setFontSize(11);doc.setTextColor(0);
+    doc.text(b.recipientName,14,60);
+    // Title
+    doc.setFontSize(18);doc.setTextColor(29,67,126);
+    doc.text('Sammelrechnung',14,85);
+    doc.setFontSize(10);doc.setTextColor(0);
+    doc.text('Rechnungsnr.: '+b.num,14,95);
+    doc.text('Datum: '+fd(b.date),14,101);
+    doc.text('Zahlungsziel: '+(bv.zahlungsziel||14)+' Tage',14,107);
+    doc.setDrawColor(200);doc.line(14,112,w-14,112);
+    // Positions header
+    let y=120;
+    doc.setFontSize(9);doc.setFont(undefined,'bold');
+    doc.text('Pos.',14,y);doc.text('Datum',24,y);doc.text('Beschreibung',48,y);doc.text('Betrag',w-14,y,{align:'right'});
+    doc.setFont(undefined,'normal');
+    y+=6;
+    doc.setDrawColor(220);doc.line(14,y-2,w-14,y-2);
+    b.positions.forEach((p,i)=>{
+      if(y>260){doc.addPage();y=20}
+      doc.text(String(i+1),14,y);
+      doc.text(fd(p.date),24,y);
+      const desc=doc.splitTextToSize(p.desc, w-70);
+      doc.text(desc,48,y);
+      doc.text(fc(p.amount),w-14,y,{align:'right'});
+      y+=Math.max(6, desc.length*5);
+    });
+    // Total
+    doc.setDrawColor(200);doc.line(14,y+2,w-14,y+2);
+    y+=10;
+    doc.setFont(undefined,'bold');doc.setFontSize(12);
+    doc.text('Gesamt:',48,y);doc.text(fc(b.amount),w-14,y,{align:'right'});
+    // Footer
+    y+=20;doc.setFont(undefined,'normal');doc.setFontSize(9);doc.setTextColor(100);
+    if(bv.iban)doc.text('IBAN: '+bv.iban,14,y);
+    if(bv.bic){y+=5;doc.text('BIC: '+bv.bic,14,y)}
+    if(bv.fusszeile){doc.setTextColor(120);doc.text(bv.fusszeile,w/2,285,{align:'center'})}
+    doc.save('Sammelrechnung_'+b.num.replace(/\s+/g,'_')+'.pdf');
+    toast('PDF erstellt: Sammelrechnung_'+b.num,'success');
+  }catch(e){toast('PDF-Fehler: '+e.message,'error');console.error(e)}
+}
+
+// Pool-Eintrag manuell entfernen (nur OPEN)
+function deletePoolItem(pid){
+  const p=pools.find(x=>x.id===pid);if(!p||p.status!=='OPEN')return;
+  if(!confirm('Position wirklich entfernen?'))return;
+  pools=pools.filter(x=>x.id!==pid);
+  saveData();renderPools();
+}
+
+// Batch-Rechnung als bezahlt markieren
+function markBatchPaid(bid){
+  const b=batchInvoices.find(x=>x.id===bid);if(!b)return;
+  b.status='PAID';b.paidAt=new Date().toISOString();
+  saveData();renderPools();toast('Sammelrechnung '+b.num+' als bezahlt markiert','success');
+}
+
+// Pool zurücksetzen: alle OPEN-Items eines Pools verwerfen
+function clearPool(poolKey){
+  const items=pools.filter(p=>p.poolFor===poolKey&&p.status==='OPEN');
+  if(items.length===0){toast('Pool ist bereits leer','info');return}
+  if(!confirm(items.length+' offene Position(en) unwiderruflich verwerfen?'))return;
+  pools=pools.filter(p=>!(p.poolFor===poolKey&&p.status==='OPEN'));
+  saveData();renderPools();
+}
+
+// ============ POOL UI ============
+let poolView='overview';  // 'overview' | 'detail:<key>' | 'batches' | 'config'
+
+function renderPools(){
+  const cfg=poolConfig;
+  // Toolbar
+  $('pageToolbar').innerHTML='<div class="toolbar">'+
+    '<strong style="font-size:15px">💧 Pools — Kettenreaktions-Abrechnung</strong>'+
+    '<span style="flex:1"></span>'+
+    '<button class="btn '+(poolView==='overview'?'btn-primary':'btn-secondary')+'" onclick="poolView=\'overview\';renderPools()">Übersicht</button>'+
+    '<button class="btn '+(poolView==='batches'?'btn-primary':'btn-secondary')+'" style="margin-left:6px" onclick="poolView=\'batches\';renderPools()">Sammelrechnungen ('+batchInvoices.length+')</button>'+
+    '<button class="btn '+(poolView==='config'?'btn-primary':'btn-secondary')+'" style="margin-left:6px" onclick="poolView=\'config\';renderPools()">Sätze</button>'+
+  '</div>';
+
+  // KPI-Zeile
+  const totalOpen=pools.filter(p=>p.status==='OPEN').reduce((s,p)=>s+p.amount,0);
+  const totalInvoiced=batchInvoices.filter(b=>b.status==='OPEN').reduce((s,b)=>s+b.amount,0);
+  const totalPaid=batchInvoices.filter(b=>b.status==='PAID').reduce((s,b)=>s+b.amount,0);
+  $('pageKpis').innerHTML='<div class="kpi-strip">'+
+    '<div class="kpi-card"><div class="kpi-label">Offene Pool-Beträge</div><div class="kpi-value orange">'+fc(totalOpen)+'</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Sammelrechnungen offen</div><div class="kpi-value blue">'+fc(totalInvoiced)+'</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Sammelrechnungen bezahlt</div><div class="kpi-value green">'+fc(totalPaid)+'</div></div>'+
+    '<div class="kpi-card"><div class="kpi-label">Chain-Events gesamt</div><div class="kpi-value blue">'+(new Set(pools.map(p=>p.eventId))).size+'</div></div>'+
+  '</div>';
+
+  if(poolView==='config')return renderPoolConfig();
+  if(poolView==='batches')return renderBatchList();
+  if(poolView.startsWith('detail:'))return renderPoolDetail(poolView.slice(7));
+
+  // Übersicht
+  const trigger=
+    '<div class="card" style="padding:16px;margin-bottom:16px;background:#F0FDF4;border:1px solid #16a34a">'+
+      '<div style="display:flex;align-items:center;margin-bottom:10px;gap:8px"><strong style="font-size:14px;color:#14532D">⚡ Kettenreaktion auslösen</strong>'+
+      '<span style="color:#065F46;font-size:11px">B = n × p → verteilt 100% auf 6 Positionen</span></div>'+
+      '<div class="form-row" style="gap:8px">'+
+        '<div class="form-group" style="flex:0 0 100px"><label>Kunden n</label><input type="number" id="chN" value="10" min="1" step="1"></div>'+
+        '<div class="form-group" style="flex:0 0 140px"><label>Provision p (EUR)</label><input type="number" id="chP" value="499" min="0" step="0.01"></div>'+
+        '<div class="form-group" style="flex:1"><label>Bezeichnung</label><input type="text" id="chLabel" placeholder="z. B. Abrechnung KW 28/2026"></div>'+
+        '<div class="form-group" style="flex:0 0 180px"><label>Referenz-Rechnung (opt.)</label><input type="text" id="chRef" placeholder="z. B. BA 060/070"></div>'+
+        '<div class="form-group" style="flex:0 0 auto;justify-content:flex-end"><label>&nbsp;</label>'+
+          '<button class="btn btn-primary" onclick="triggerChainFromForm()">Auslösen &rarr;</button></div>'+
+      '</div>'+
+      '<div id="chPreview" style="margin-top:10px;font-size:11px;color:#065F46"></div>'+
+    '</div>';
+
+  // Pool-Karten
+  const cards=POOL_RECIPIENTS.map(rec=>{
+    const items=pools.filter(p=>p.poolFor===rec.key&&p.status==='OPEN');
+    const sum=items.reduce((s,p)=>s+p.amount,0);
+    return '<div class="card pool-card" onclick="poolView=\'detail:'+rec.key+'\';renderPools()" style="cursor:pointer;padding:16px;border-left:4px solid '+rec.color+'">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center">'+
+        '<div>'+
+          '<div style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">'+rec.key+' · Stufe '+rec.stage+'</div>'+
+          '<div style="font-size:16px;font-weight:700;color:'+rec.color+';margin-top:2px">'+rec.name+'</div>'+
+        '</div>'+
+        '<div style="text-align:right">'+
+          '<div style="font-size:20px;font-weight:700;color:#111">'+fc(sum)+'</div>'+
+          '<div style="font-size:11px;color:#6b7280">'+items.length+' offen</div>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+
+  $('contentArea').innerHTML=trigger+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px">'+cards+'</div>';
+
+  // Live-Preview binden
+  const upd=()=>{
+    const n=parseInt($('chN').value)||0, p=parseFloat($('chP').value)||0;
+    if(n<=0||p<=0){$('chPreview').innerHTML='';return}
+    const c=calcChain(n*p);
+    $('chPreview').innerHTML='B = '+fc(c.B)+
+      ' &nbsp;→&nbsp; KZ '+fc(c.KZ)+' · L '+fc(c.L)+' · P1 '+fc(c.P1)+' · P2 '+fc(c.P2)+' · P3 '+fc(c.P3)+' · H '+fc(c.H);
+  };
+  ['chN','chP'].forEach(i=>{const el=$(i);if(el)el.addEventListener('input',upd)});
+  upd();
+}
+
+function renderPoolDetail(key){
+  const rec=POOL_RECIPIENTS.find(r=>r.key===key);if(!rec){poolView='overview';return renderPools()}
+  const open=pools.filter(p=>p.poolFor===key&&p.status==='OPEN');
+  const inv=pools.filter(p=>p.poolFor===key&&p.status==='INVOICED');
+  const sumOpen=open.reduce((s,p)=>s+p.amount,0);
+  const rows=(items,showBatch)=>items.length===0?
+    '<tr><td colspan="4" style="text-align:center;color:var(--gray);padding:24px">Keine Einträge</td></tr>':
+    items.map(p=>{
+      const b=showBatch&&p.batchInvoiceId?batchInvoices.find(x=>x.id===p.batchInvoiceId):null;
+      return '<tr>'+
+        '<td style="width:100px">'+fd(p.date)+'</td>'+
+        '<td>'+p.description+(b?' <span class="type-tag type-SAMMELRECHNUNG">'+b.num+'</span>':'')+'</td>'+
+        '<td class="num" style="text-align:right;font-variant-numeric:tabular-nums;font-weight:600">'+fc(p.amount)+'</td>'+
+        '<td style="width:80px;text-align:right">'+
+          (p.status==='OPEN'?'<button class="btn btn-sm btn-secondary" onclick="deletePoolItem(\''+p.id+'\')">×</button>':'—')+
+        '</td>'+
+      '</tr>';
+    }).join('');
+  $('contentArea').innerHTML=
+    '<div style="margin-bottom:12px"><button class="btn btn-secondary" onclick="poolView=\'overview\';renderPools()">&larr; Zur Übersicht</button></div>'+
+    '<div class="card" style="padding:16px;margin-bottom:12px;border-left:4px solid '+rec.color+'">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center">'+
+        '<div>'+
+          '<div style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase">Empfänger '+rec.key+' · Stufe '+rec.stage+'</div>'+
+          '<h2 style="margin:2px 0 0 0;color:'+rec.color+'">'+rec.name+'</h2>'+
+        '</div>'+
+        '<div style="text-align:right">'+
+          '<div style="font-size:11px;color:#6b7280">Offene Summe</div>'+
+          '<div style="font-size:28px;font-weight:700;color:'+rec.color+'">'+fc(sumOpen)+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div style="margin-top:12px;display:flex;gap:8px">'+
+        '<button class="btn btn-primary" '+(open.length===0?'disabled':'')+' onclick="createBatchFromPool(\''+key+'\')">JETZT ABRECHNEN ('+open.length+' Pos. · '+fc(sumOpen)+')</button>'+
+        '<button class="btn btn-secondary" '+(open.length===0?'disabled':'')+' onclick="clearPool(\''+key+'\')">Pool leeren</button>'+
+      '</div>'+
+    '</div>'+
+    '<h3 style="margin:16px 0 8px 0">Offene Positionen ('+open.length+')</h3>'+
+    '<table class="inv-table"><thead><tr><th>Datum</th><th>Beschreibung</th><th style="text-align:right">Betrag</th><th></th></tr></thead><tbody>'+rows(open,false)+'</tbody></table>'+
+    '<h3 style="margin:20px 0 8px 0">Bereits abgerechnet ('+inv.length+')</h3>'+
+    '<table class="inv-table"><thead><tr><th>Datum</th><th>Beschreibung</th><th style="text-align:right">Betrag</th><th></th></tr></thead><tbody>'+rows(inv,true)+'</tbody></table>';
+}
+
+function renderBatchList(){
+  const rows=batchInvoices.length===0?
+    '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:32px">Noch keine Sammelrechnungen erstellt</td></tr>':
+    [...batchInvoices].reverse().map(b=>{
+      const badge=b.status==='PAID'?'<span class="inv-badge inv-PAID">BEZAHLT</span>':'<span class="inv-badge inv-OPEN">OFFEN</span>';
+      const rec=POOL_RECIPIENTS.find(r=>r.key===b.poolKey);
+      return '<tr>'+
+        '<td style="font-weight:600">'+b.num+'</td>'+
+        '<td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+(rec?rec.color:'#6b7280')+';margin-right:6px"></span>'+b.recipientName+'</td>'+
+        '<td>'+fd(b.date)+'</td>'+
+        '<td>'+b.positions.length+' Pos.</td>'+
+        '<td style="text-align:right;font-weight:700">'+fc(b.amount)+'</td>'+
+        '<td>'+badge+'</td>'+
+        '<td style="text-align:right;white-space:nowrap">'+
+          '<button class="btn btn-sm btn-primary" onclick="generateBatchPDF(\''+b.id+'\')">PDF</button>'+
+          (b.status==='OPEN'?'<button class="btn btn-sm btn-secondary" style="margin-left:4px" onclick="markBatchPaid(\''+b.id+'\')">✓ Bezahlt</button>':'')+
+        '</td>'+
+      '</tr>';
+    }).join('');
+  $('contentArea').innerHTML=
+    '<h3 style="margin:0 0 8px 0">Sammelrechnungen</h3>'+
+    '<table class="inv-table"><thead><tr><th>Nr.</th><th>Empfänger</th><th>Datum</th><th>Positionen</th><th style="text-align:right">Betrag</th><th>Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+
+function renderPoolConfig(){
+  const cfg=poolConfig;
+  const pct=v=>(v*100).toFixed(2);
+  const sumP=cfg.s1+cfg.s2+cfg.s3+cfg.h;
+  const warn=Math.abs(sumP-1)>0.0001?'<div class="warnbox" style="background:#FFF2F1;border-left:3px solid #dc2626;padding:8px 12px;margin:8px 0;font-size:12px">⚠ s1+s2+s3+h muss 100% ergeben (aktuell '+(sumP*100).toFixed(2)+'%)</div>':'';
+  $('contentArea').innerHTML=
+    '<h3 style="margin:0 0 12px 0">Sätze der Kettenreaktion</h3>'+
+    '<div class="card" style="padding:16px;max-width:600px">'+
+      '<div class="formula" style="background:#f5f5f7;padding:10px;border-radius:4px;font-family:monospace;font-size:11px;white-space:pre-wrap;margin-bottom:16px">'+
+        'B      = n × p                (Bruttoeingang)\n'+
+        'KZ_cut = B × r_kz              → Konstanzer\n'+
+        'KZ_out = B − KZ_cut            → an Baleo\n'+
+        'L_cut  = KZ_out × r_l          → Baleo\n'+
+        'L_out  = KZ_out − L_cut        (Ausschüttungstopf)\n'+
+        'P1 = L_out × s1  · P2 = L_out × s2  · P3 = L_out × s3  · H = L_out × h'+
+      '</div>'+
+      warn+
+      '<div class="form-row">'+
+        '<div class="form-group"><label>r_kz — Konstanzer-Verwaltung (%)</label><input type="number" step="0.01" id="cfgRkz" value="'+pct(cfg.r_kz)+'"></div>'+
+        '<div class="form-group"><label>r_l — Baleo-Service (%)</label><input type="number" step="0.01" id="cfgRl" value="'+pct(cfg.r_l)+'"></div>'+
+      '</div>'+
+      '<div class="form-row">'+
+        '<div class="form-group"><label>s1 — Vermittler L1 (%)</label><input type="number" step="0.01" id="cfgS1" value="'+pct(cfg.s1)+'"></div>'+
+        '<div class="form-group"><label>s2 — Sponsor L2 (%)</label><input type="number" step="0.01" id="cfgS2" value="'+pct(cfg.s2)+'"></div>'+
+      '</div>'+
+      '<div class="form-row">'+
+        '<div class="form-group"><label>s3 — Regional L3 (%)</label><input type="number" step="0.01" id="cfgS3" value="'+pct(cfg.s3)+'"></div>'+
+        '<div class="form-group"><label>h — House (%)</label><input type="number" step="0.01" id="cfgH" value="'+pct(cfg.h)+'"></div>'+
+      '</div>'+
+      '<div style="display:flex;gap:8px;margin-top:12px">'+
+        '<button class="btn btn-primary" onclick="savePoolConfig()">Sätze speichern</button>'+
+        '<button class="btn btn-secondary" onclick="resetPoolConfig()">Auf Standard zurücksetzen</button>'+
+      '</div>'+
+    '</div>';
+}
+function savePoolConfig(){
+  const g=k=>parseFloat($(k).value)/100;
+  const nc={r_kz:g('cfgRkz'),r_l:g('cfgRl'),s1:g('cfgS1'),s2:g('cfgS2'),s3:g('cfgS3'),h:g('cfgH')};
+  const sumP=nc.s1+nc.s2+nc.s3+nc.h;
+  if(Math.abs(sumP-1)>0.0001){toast('s1+s2+s3+h muss 100% ergeben','error');return}
+  poolConfig=nc;saveData();toast('Sätze gespeichert','success');renderPools();
+}
+function resetPoolConfig(){poolConfig={...DEFAULT_POOL_CONFIG};saveData();renderPools();toast('Auf Standardsätze zurückgesetzt','info')}
 
 // === PIN LOGIN ===
 function pinNext(n){
